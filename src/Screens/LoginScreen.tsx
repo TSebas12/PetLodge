@@ -1,7 +1,17 @@
 import React from "react";
-import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
+
+const Logo = require("../../assets/LogoPetLodge.webp");
+const MailIcon = require("../../assets/IconoCorreo.webp");
+const LockIcon = require("../../assets/IconoContrasena.webp");
 
 const LoginScreen = () => {
   return (
@@ -10,9 +20,13 @@ const LoginScreen = () => {
       {/* Tarjeta Blanca (Card) */}
       <View className="bg-white w-full max-w-[360px] p-8 rounded-[16px] shadow-2xl items-center">
         {/* Icono de Huella/Pet (Circulo verde claro) */}
-        <View className="w-20 h-20 bg-[#DCFCE7] rounded-full justify-center items-center mb-6">
-          {/* Aquí iría tu logo de PetLodge */}
-          <View className="w-10 h-10 border-4 border-[#00A63E] rounded-md rotate-12" />
+        <View className="w-[80px] h-[80px] bg-[#DCFCE7] rounded-full justify-center items-center mb-6 overflow-hidden">
+          {/* Logo en formato WebP */}
+          <Image
+            source={Logo}
+            style={{ width: 48, height: 48 }}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Títulos */}
@@ -27,8 +41,15 @@ const LoginScreen = () => {
         <CustomInput
           label="Correo Electrónico"
           placeholder="Correo electrónico"
+          icon={MailIcon}
         />
-        <CustomInput label="Contraseña" placeholder="Contraseña" isPassword />
+
+        <CustomInput
+          label="Contraseña"
+          placeholder="Contraseña"
+          isPassword
+          icon={LockIcon}
+        />
 
         {/* Botón Iniciar Sesión */}
         <CustomButton title="Iniciar Sesión" onPress={() => {}} />

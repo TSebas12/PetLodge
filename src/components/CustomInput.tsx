@@ -1,30 +1,41 @@
 import React from "react";
-import { Text, TextInput, View } from "react-native";
+import {
+  Image,
+  ImageSourcePropType,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 interface Props {
   label: string;
   placeholder: string;
   isPassword?: boolean;
+  icon?: ImageSourcePropType;
 }
 
-const CustomInput = ({ label, placeholder, isPassword }: Props) => {
+const CustomInput = ({ label, placeholder, isPassword, icon }: Props) => {
   return (
     <View className="w-full mb-4">
-      {/* Label: Inter 500, 14px, #364153 */}
       <Text className="text-[#364153] text-[14px] font-medium mb-2 leading-5">
         {label}
       </Text>
 
-      <View className="relative">
-        {/* Input: Inter 400, 16px, Border #D1D5DC, Radius 10 */}
+      <View className="relative justify-center">
         <TextInput
           placeholder={placeholder}
           secureTextEntry={isPassword}
           placeholderTextColor="rgba(10, 10, 10, 0.50)"
-          className="w-full h-[50px] border border-[#D1D5DC] rounded-[10px] px-10 text-[16px] text-[#101828]"
+          className="w-full h-[50px] border border-[#D1D5DC] rounded-[10px] pl-[48px] text-[16px] text-[#101828]"
         />
-        {/* Espacio para el icono (12px desde la izquierda) */}
-        <View className="absolute left-3 top-4 w-5 h-5 bg-gray-200 rounded-full opacity-20" />
+        {/* Renderizamos la imagen solo si pasas un icono */}
+        {icon && (
+          <Image
+            source={icon}
+            style={{ width: 20, height: 20, position: "absolute", left: 16 }}
+            resizeMode="contain"
+          />
+        )}
       </View>
     </View>
   );
