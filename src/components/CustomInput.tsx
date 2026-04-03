@@ -12,9 +12,16 @@ interface Props {
   placeholder: string;
   isPassword?: boolean;
   icon?: ImageSourcePropType;
+  editable?: boolean; // <-- Agregamos esto a la Interface
 }
 
-const CustomInput = ({ label, placeholder, isPassword, icon }: Props) => {
+const CustomInput = ({
+  label,
+  placeholder,
+  isPassword,
+  icon,
+  editable = true,
+}: Props) => {
   return (
     <View className="w-full mb-4">
       <Text className="text-[#364153] text-[14px] font-medium mb-2 leading-5">
@@ -25,8 +32,12 @@ const CustomInput = ({ label, placeholder, isPassword, icon }: Props) => {
         <TextInput
           placeholder={placeholder}
           secureTextEntry={isPassword}
+          editable={editable} // <-- Se lo pasamos al TextInput original
           placeholderTextColor="rgba(10, 10, 10, 0.50)"
-          className="w-full h-[50px] border border-[#D1D5DC] rounded-[10px] pl-[48px] text-[16px] text-[#101828]"
+          // Añadimos una pequeña lógica visual: si no es editable, el fondo se ve ligeramente gris
+          className={`w-full h-[50px] border border-[#D1D5DC] rounded-[10px] pl-[48px] text-[16px] text-[#101828] ${
+            !editable ? "bg-[#F9FAFB]" : "bg-white"
+          }`}
         />
         {/* Renderizamos la imagen solo si pasas un icono */}
         {icon && (

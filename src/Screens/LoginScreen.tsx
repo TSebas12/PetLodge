@@ -40,13 +40,13 @@ const LoginScreen = () => {
         {/* Formulario */}
         <CustomInput
           label="Correo Electrónico"
-          placeholder="Correo electrónico"
+          placeholder="Ingrese su correo electrónico"
           icon={MailIcon}
         />
 
         <CustomInput
           label="Contraseña"
-          placeholder="Contraseña"
+          placeholder="Ingrese su contraseña"
           isPassword
           icon={LockIcon}
         />

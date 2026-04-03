@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import LoginScreen from "../src/Screens/RegisterScreen";
+import LoginScreen from "../src/Screens/LoginScreen";
 
 export default function Page() {
   return (
