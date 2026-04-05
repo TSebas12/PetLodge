@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Image,
   SafeAreaView,
@@ -21,14 +21,16 @@ const PhoneIcon = require("../../assets/IconoTelefono.webp");
 const MapIcon = require("../../assets/IconoUbicacion.webp");
 
 const EditProfileScreen = () => {
+  const [isEditing, setIsEditing] = useState(false);
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-[#F9FAFB]">
       {/* Header Fijo Superior */}
       <View className="w-full bg-white px-4 py-4 flex-row justify-between items-center border-b border-[#E5E7EB]">
         <View className="flex-row items-center">
           <Image
             source={Logo}
-            style={{ width: 28, height: 28 }}
+            style={{ width: 32, height: 32 }}
             resizeMode="contain"
           />
           <Text className="text-[#101828] text-xl font-bold ml-2">
@@ -42,7 +44,7 @@ const EditProfileScreen = () => {
         >
           <Image
             source={LogoutIcon}
-            style={{ width: 24, height: 24, tintColor: "#4A5565" }}
+            style={{ width: 20, height: 20, tintColor: "#4A5565" }}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -51,71 +53,101 @@ const EditProfileScreen = () => {
       {/* Contenido con Scroll */}
       <ScrollView
         contentContainerStyle={{
-          width: "100%",
           paddingBottom: 40,
           paddingTop: 30,
         }}
         showsVerticalScrollIndicator={false}
         className="flex-1 px-4"
       >
-        {/* Títulos de la pantalla */}
-        <View className="w-full mb-8">
-          <Text className="text-[#101828] text-3xl font-bold">
-            Editar Perfil
+        <View className="w-full mb-6">
+          <Text className="text-[#101828] text-[30px] font-bold leading-[36px]">
+            {isEditing ? "Editar Perfil de Usuario" : "Perfil de Usuario"}
           </Text>
           <Text className="text-[#4A5565] text-base mt-2">
-            Actualiza tu información personal
+            {isEditing
+              ? "Modifica tus datos personales"
+              : "Tu información personal"}
           </Text>
         </View>
 
-        {/* Formulario - Inputs Deshabilitados (No editables) */}
-        <View className="w-full gap-y-2">
-          <CustomInput
-            label="Nombre Completo"
-            placeholder=""
-            icon={UserIcon}
-            editable={false}
-          />
+        <View
+          className="w-full bg-white p-6 rounded-[14px] border border-[#E5E7EB] shadow-sm"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
+        >
+          <View className="w-full gap-y-1">
+            <CustomInput
+              label="Nombre Completo"
+              placeholder="Juan Pérez"
+              icon={UserIcon}
+              editable={isEditing}
+            />
 
-          <CustomInput
-            label="Cédula"
-            placeholder=""
-            icon={IdIcon}
-            editable={false}
-          />
+            <CustomInput
+              label="Cédula"
+              placeholder="112344321"
+              icon={IdIcon}
+              editable={isEditing}
+            />
 
-          <CustomInput
-            label="Correo Electrónico"
-            placeholder=""
-            icon={MailIcon}
-            editable={false}
-          />
+            <CustomInput
+              label="Correo Electrónico"
+              placeholder="juan.perez@example.com"
+              icon={MailIcon}
+              editable={isEditing}
+            />
 
-          <CustomInput
-            label="Teléfono"
-            placeholder=""
-            icon={PhoneIcon}
-            editable={false}
-          />
+            <CustomInput
+              label="Teléfono"
+              placeholder="8888-8888"
+              icon={PhoneIcon}
+              editable={isEditing}
+            />
 
-          <CustomInput
-            label="Dirección"
-            placeholder=""
-            icon={MapIcon}
-            editable={false}
-          />
-        </View>
+            <CustomInput
+              label="Dirección"
+              placeholder="Dirección ejemplo"
+              icon={MapIcon}
+              editable={isEditing}
+            />
+          </View>
 
-        {/* Botón de Acción - Título actualizado */}
-        <View className="w-full mt-10">
-          <CustomButton
-            title="Editar Perfil"
-            onPress={() => console.log("Habilitar edición")}
-          />
+          {/* Sección de Botones */}
+          <View className="w-full mt-6 pt-6 border-t border-[#E5E7EB]">
+            {!isEditing ? (
+              <CustomButton
+                title="Editar Perfil"
+                onPress={() => setIsEditing(true)}
+              />
+            ) : (
+              <View className="gap-y-3">
+                {/* Botón de Cancelar arriba en Rojo */}
+                <CustomButton
+                  title="Cancelar"
+                  type="danger"
+                  onPress={() => setIsEditing(false)}
+                />
+
+                {/* Botón de Guardar abajo en Verde */}
+                <CustomButton
+                  title="Guardar Cambios"
+                  type="primary"
+                  onPress={() => {
+                    console.log("Guardado");
+                    setIsEditing(false);
+                  }}
+                />
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
 
-      {/* Footer Fijo Inferior */}
       <Footer />
     </SafeAreaView>
   );

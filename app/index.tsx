@@ -4,7 +4,7 @@ import LoginScreen from "../src/Screens/LoginScreen";
 
 export default function Page() {
   return (
-    <View className="flex-1 justify-center items-center">
+    <View className="flex-1 justify-center ">
       {/* Aquí renderizamos tu pantalla de login */}
       <LoginScreen />
     </View>
