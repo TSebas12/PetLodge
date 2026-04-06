@@ -9,16 +9,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Footer from "../components/Footer";
-import StatCard from "../components/StatCard"; // El componente que creamos antes
+import MyPetsCard from "../components/PetCard"; // Tu componente actualizado
+import ActiveReservationsCard from "../components/ReservationCard"; // Nueva sección
+import StatCard from "../components/StatCard";
 
-// Importación de activos (usando tu misma lógica)
+// Importación de activos
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
+const MiniLogo = require("../../assets/LogoPetLodge.webp");
+const CalendarBlue = require("../../assets/IconoCalendarioA.webp");
+const CalendarOrange = require("../../assets/IconoCalendarioN.webp");
 
 const HomeScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header Fijo Superior (Copiado de tu Ref) */}
+      {/* Header Fijo Superior */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
@@ -56,8 +61,9 @@ const HomeScreen = () => {
           <StatCard
             label="Mascotas Registradas"
             value="3"
+            icon={MiniLogo}
             iconBackgroundColor="#DCFCE7"
-            iconBorderColor="#00A63E"
+            iconTintColor="#15803D"
           />
 
           <View style={{ height: 16 }} />
@@ -65,8 +71,9 @@ const HomeScreen = () => {
           <StatCard
             label="Reservas Activas"
             value="1"
+            icon={CalendarBlue}
             iconBackgroundColor="#DBEAFE"
-            iconBorderColor="#155DFC"
+            iconTintColor="#1D4ED8"
           />
 
           <View style={{ height: 16 }} />
@@ -74,16 +81,20 @@ const HomeScreen = () => {
           <StatCard
             label="Próximas Reservas"
             value="1"
+            icon={CalendarOrange}
             iconBackgroundColor="#FEF9C2"
-            iconBorderColor="#D08700"
+            iconTintColor="#A16207"
           />
         </View>
 
-        {/* Espacio para futuras secciones como 'Últimas Actividades' */}
-        <View style={styles.placeholderCard}>
-          <Text style={styles.placeholderText}>
-            Próximamente: Lista de mascotas recientes
-          </Text>
+        {/* Sección de Mis Mascotas */}
+        <View style={styles.sectionContainer}>
+          <MyPetsCard />
+        </View>
+
+        {/* Reservas Activas */}
+        <View style={styles.sectionContainer}>
+          <ActiveReservationsCard />
         </View>
       </ScrollView>
 
@@ -132,7 +143,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Espacio extra para no chocar con el footer
+    paddingBottom: 100,
     paddingTop: 30,
     paddingHorizontal: 16,
   },
@@ -155,20 +166,9 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 24,
   },
-  placeholderCard: {
+  sectionContainer: {
     width: "100%",
-    padding: 24,
-    backgroundColor: "white",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderStyle: "dashed",
-    alignItems: "center",
-  },
-  placeholderText: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontStyle: "italic",
+    marginBottom: 24,
   },
 });
 

@@ -1,18 +1,26 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 interface StatCardProps {
   label: string;
   value: string | number;
+  icon: ImageSourcePropType; // <--- Nueva prop para la imagen
   iconBackgroundColor?: string;
-  iconBorderColor?: string;
+  iconTintColor?: string; // <--- Opcional, por si quieres teñir el icono
 }
 
 const StatCard = ({
   label,
   value,
+  icon,
   iconBackgroundColor = "#DCFCE7",
-  iconBorderColor = "#00A63E",
+  iconTintColor,
 }: StatCardProps) => {
   return (
     <View style={styles.container}>
@@ -25,36 +33,18 @@ const StatCard = ({
           </View>
         </View>
 
-        {/* Lado Derecho: Icono decorativo */}
+        {/* Lado Derecho: Contenedor con Imagen */}
         <View
           style={[styles.iconBox, { backgroundColor: iconBackgroundColor }]}
         >
-          <View style={styles.iconContainer}>
-            <View
-              style={[
-                styles.miniSquare,
-                { top: 2, left: 9, borderColor: iconBorderColor },
-              ]}
-            />
-            <View
-              style={[
-                styles.miniSquare,
-                { top: 6, left: 16, borderColor: iconBorderColor },
-              ]}
-            />
-            <View
-              style={[
-                styles.miniSquare,
-                { top: 14, left: 18, borderColor: iconBorderColor },
-              ]}
-            />
-            <View
-              style={[
-                styles.mainSquare,
-                { top: 10, left: 2, borderColor: iconBorderColor },
-              ]}
-            />
-          </View>
+          <Image
+            source={icon}
+            style={[
+              styles.iconImage,
+              iconTintColor ? { tintColor: iconTintColor } : null,
+            ]}
+            resizeMode="contain"
+          />
         </View>
       </View>
     </View>
@@ -69,7 +59,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.28,
     borderColor: "#E5E7EB",
-    // Sombras consistentes con tu Card de perfil
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -90,6 +79,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "400",
     lineHeight: 16,
+    // Aquí el sistema usará la fuente de la HomeScreen automáticamente
   },
   valueWrapper: {
     height: 32,
@@ -108,24 +98,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  iconContainer: {
-    width: 24,
-    height: 24,
-    position: "relative",
-  },
-  miniSquare: {
-    width: 4,
-    height: 4,
-    position: "absolute",
-    borderWidth: 2,
-    borderRadius: 1,
-  },
-  mainSquare: {
-    width: 12,
-    height: 12,
-    position: "absolute",
-    borderWidth: 2,
-    borderRadius: 1,
+  iconImage: {
+    width: 22, // Tamaño ideal para que quepa bien en el box de 40
+    height: 22,
   },
 });
 
