@@ -1,7 +1,7 @@
-import axios from "axios"; // Asegúrate de haber hecho: npm install axios
-import React, { useState } from "react"; // Importamos useState
+import axios from "axios";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -10,10 +10,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
+import LoadingModal from "../components/modals/LoadingModal";
+import SingleBtnModal from "../components/modals/SingleBtnModal";
 
-// ... tus imports de imágenes se quedan igual ...
 const Logo = require("../../assets/LogoPetLodge.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
 const IdIcon = require("../../assets/IconoTarjeta.webp");
@@ -22,8 +24,16 @@ const PhoneIcon = require("../../assets/IconoTelefono.webp");
 const MapIcon = require("../../assets/IconoUbicacion.webp");
 const LockIcon = require("../../assets/IconoContrasena.webp");
 
+// Iconos para modales
+const IconoAlerta = require("../../assets/IconoAlerta.webp");
+const IconoX = require("../../assets/IconoX.webp");
+const IconoCheck = require("../../assets/IconoCheck.webp");
+const LogoPetLodge = require("../../assets/LogoPetLodge.webp");
+
 const RegisterScreen = () => {
-  // 1. Estados para capturar el texto
+  const router = useRouter();
+
+  // 1. Estados para los campos
   const [fullName, setFullName] = useState("");
   const [cedula, setCedula] = useState("");
   const [email, setEmail] = useState("");
@@ -31,42 +41,91 @@ const RegisterScreen = () => {
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
 
+  // Estados para Modales
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    title: "",
+    subtitle: "",
+    icon: IconoAlerta,
+    onConfirm: () => {},
+  });
+
   // 2. Función para enviar al Backend
   const handleRegister = async () => {
-    // Validar que no haya campos vacíos
+    // Validación de campos obligatorios
     if (!fullName || !cedula || !email || !password) {
-      Alert.alert("Error", "Por favor completa los campos obligatorios");
+      setModalData({
+        title: "Campos incompletos",
+        subtitle:
+          "Por favor, completa los campos obligatorios para registrarte.",
+        icon: IconoAlerta,
+        onConfirm: () => setShowModal(false),
+      });
+      setShowModal(true);
       return;
     }
 
-    try {
-      // REEMPLAZA ESTA IP POR LA TUYA
-      const API_URL = "http://192.168.1.40:3000/api/users/register";
+    setLoading(true);
+    const delay = new Promise((resolve) => setTimeout(resolve, 1200));
 
-      const response = await axios.post(API_URL, {
-        fullName,
-        cedula,
-        email,
-        phone,
-        address,
-        password,
-      });
+    try {
+      const API_URL = "http://10.153.64.43:3000/api/users/register";
+      const [response] = await Promise.all([
+        axios.post(API_URL, {
+          fullName,
+          cedula,
+          email,
+          phone,
+          address,
+          password,
+        }),
+        delay,
+      ]);
 
       if (response.status === 201) {
-        Alert.alert("¡Éxito!", "Dueño registrado en PetLodge");
-        // Aquí podrías limpiar el formulario o navegar al login
+        // ÉXITO AL REGISTRAR
+        setModalData({
+          title: "¡Registro Exitoso!",
+          subtitle:
+            "Tu cuenta ha sido creada correctamente. Ya puedes iniciar sesión.",
+          icon: IconoCheck,
+          onConfirm: () => {
+            setShowModal(false);
+            router.replace("/");
+          },
+        });
+        setShowModal(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Alert.alert(
-        "Error",
-        "No se pudo conectar con el servidor. Revisa la IP.",
-      );
+      // ERROR AL REGISTRAR (Email ya existe, error de red, etc)
+      setModalData({
+        title: "Error al registrar",
+        subtitle:
+          error.response?.data?.message ||
+          "No pudimos conectar con el servidor.",
+        icon: IconoX,
+        onConfirm: () => setShowModal(false),
+      });
+      setShowModal(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LoadingModal visible={loading} message="Creando tu cuenta..." />
+
+      <SingleBtnModal
+        visible={showModal}
+        icon={modalData.icon}
+        title={modalData.title}
+        subtitle={modalData.subtitle}
+        onConfirm={modalData.onConfirm}
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -81,13 +140,12 @@ const RegisterScreen = () => {
             Completa tus datos para crear una cuenta
           </Text>
 
-          {/* 3. Agregamos value y onChangeText a cada Input */}
           <CustomInput
             label="Nombre Completo"
             placeholder="Ingrese su nombre completo"
             icon={UserIcon}
             value={fullName}
-            onChangeText={(text) => setFullName(text)}
+            onChangeText={setFullName}
           />
 
           <CustomInput
@@ -95,7 +153,7 @@ const RegisterScreen = () => {
             placeholder="Ingrese su número de cédula"
             icon={IdIcon}
             value={cedula}
-            onChangeText={(text) => setCedula(text)}
+            onChangeText={setCedula}
           />
 
           <CustomInput
@@ -103,7 +161,7 @@ const RegisterScreen = () => {
             placeholder="Ingrese su correo electrónico"
             icon={MailIcon}
             value={email}
-            onChangeText={(text) => setEmail(text)}
+            onChangeText={setEmail}
             keyboardType="email-address"
           />
 
@@ -112,7 +170,7 @@ const RegisterScreen = () => {
             placeholder="Ingrese su número de teléfono"
             icon={PhoneIcon}
             value={phone}
-            onChangeText={(text) => setPhone(text)}
+            onChangeText={setPhone}
             keyboardType="phone-pad"
           />
 
@@ -121,7 +179,7 @@ const RegisterScreen = () => {
             placeholder="Ingrese su dirección"
             icon={MapIcon}
             value={address}
-            onChangeText={(text) => setAddress(text)}
+            onChangeText={setAddress}
           />
 
           <CustomInput
@@ -130,17 +188,16 @@ const RegisterScreen = () => {
             isPassword
             icon={LockIcon}
             value={password}
-            onChangeText={(text) => setPassword(text)}
+            onChangeText={setPassword}
           />
 
           <View style={styles.buttonWrapper}>
-            {/* 4. Conectamos la función al botón */}
             <CustomButton title="Registrarse" onPress={handleRegister} />
           </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-            <TouchableOpacity onPress={() => console.log("Ir a Login")}>
+            <TouchableOpacity onPress={() => router.back()}>
               <Text style={styles.linkText}>Iniciar Sesión</Text>
             </TouchableOpacity>
           </View>
@@ -153,7 +210,7 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F0FDF4", // Verde claro de PetLodge
+    backgroundColor: "#F0FDF4",
   },
   scrollContent: {
     flexGrow: 1,

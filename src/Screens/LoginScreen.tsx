@@ -1,18 +1,106 @@
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-// IMPORTACIÓN CORREGIDA
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
+import LoadingModal from "../components/modals/LoadingModal";
+import SingleBtnModal from "../components/modals/SingleBtnModal";
 
 const Logo = require("../../assets/LogoPetLodge.webp");
 const MailIcon = require("../../assets/IconoCorreo.webp");
 const LockIcon = require("../../assets/IconoContrasena.webp");
 
+// Iconos para el modal de error
+const IconoAlerta = require("../../assets/IconoAlerta.webp");
+const IconoX = require("../../assets/IconoX.webp");
+
 const LoginScreen = () => {
+  const router = useRouter(); // 2. Inicializamos el router
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Estados para el Modal de Error
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    title: "",
+    subtitle: "",
+    icon: IconoAlerta,
+  });
+
+  const handleLogin = async () => {
+    // 1. Validación de campos
+    if (!email || !password) {
+      setModalData({
+        title: "Campos incompletos",
+        subtitle: "Por favor, ingresa tu correo y contraseña para continuar.",
+        icon: IconoAlerta,
+      });
+      setShowErrorModal(true);
+      return;
+    }
+
+    setLoading(true);
+    const delay = new Promise((resolve) => setTimeout(resolve, 1200));
+
+    try {
+      const [response] = await Promise.all([
+        fetch("http://10.153.64.43:3000/api/users/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }),
+        delay,
+      ]);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("CORRECTO:", data.message);
+        Alert.alert("Éxito", "Bienvenido a PetLodge");
+      } else {
+        console.log("INCORRECTO:", data.message);
+        setModalData({
+          title: "Acceso Denegado",
+          subtitle: data.message || "Correo o contraseña incorrectos.",
+          icon: IconoX,
+        });
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      console.log("ERROR DE RED:", error);
+      setModalData({
+        title: "Error de Conexión",
+        subtitle: "No pudimos conectar con el servidor. Revisa tu internet.",
+        icon: IconoX,
+      });
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <LoadingModal visible={loading} message="Validando credenciales..." />
+
+      <SingleBtnModal
+        visible={showErrorModal}
+        icon={modalData.icon}
+        title={modalData.title}
+        subtitle={modalData.subtitle}
+        onConfirm={() => setShowErrorModal(false)}
+      />
+
       <View style={styles.card}>
         <View style={styles.iconContainer}>
           <Image source={Logo} style={styles.logo} resizeMode="contain" />
@@ -27,6 +115,8 @@ const LoginScreen = () => {
           label="Correo Electrónico"
           placeholder="Ingrese su correo electrónico"
           icon={MailIcon}
+          value={email}
+          onChangeText={setEmail}
         />
 
         <CustomInput
@@ -34,9 +124,11 @@ const LoginScreen = () => {
           placeholder="Ingrese su contraseña"
           isPassword
           icon={LockIcon}
+          value={password}
+          onChangeText={setPassword}
         />
 
-        <CustomButton title="Iniciar Sesión" onPress={() => {}} />
+        <CustomButton title="Iniciar Sesión" onPress={handleLogin} />
 
         <TouchableOpacity style={styles.forgotButton}>
           <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
@@ -45,7 +137,7 @@ const LoginScreen = () => {
         <View style={styles.divider}>
           <CustomButton
             title="Registrarse"
-            onPress={() => {}}
+            onPress={() => router.push("/register")}
             type="secondary"
           />
         </View>
@@ -54,6 +146,7 @@ const LoginScreen = () => {
   );
 };
 
+// ... (los estilos se mantienen igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
