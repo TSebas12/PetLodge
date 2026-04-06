@@ -1,12 +1,13 @@
 import React from "react";
 import {
   Image,
-  SafeAreaView,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 
@@ -21,33 +22,21 @@ const LockIcon = require("../../assets/IconoContrasena.webp");
 
 const RegisterScreen = () => {
   return (
-    // Fondo con el degradado simulado con el color base de PetLodge
-    <SafeAreaView className="flex-1 bg-[#F0FDF4] w-full h-full">
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingVertical: 40,
-        }}
-        className="px-4"
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         {/* Tarjeta Blanca (Card) */}
-        <View className="bg-white w-full max-w-[360px] p-8 rounded-[16px] shadow-2xl items-center">
+        <View style={styles.card}>
           {/* Logo */}
-          <View className="w-[80px] h-[80px] bg-[#DCFCE7] rounded-full justify-center items-center mb-6 overflow-hidden">
-            <Image
-              source={Logo}
-              style={{ width: 48, height: 48 }}
-              resizeMode="contain"
-            />
+          <View style={styles.iconContainer}>
+            <Image source={Logo} style={styles.logo} resizeMode="contain" />
           </View>
 
           {/* Títulos */}
-          <Text className="text-[#101828] text-2xl font-bold mb-2 text-center">
-            Registro de Usuario
-          </Text>
-          <Text className="text-[#4A5565] text-base font-normal mb-8 text-center leading-6">
+          <Text style={styles.title}>Registro de Usuario</Text>
+          <Text style={styles.subtitle}>
             Completa tus datos para crear una cuenta
           </Text>
 
@@ -90,7 +79,7 @@ const RegisterScreen = () => {
           />
 
           {/* Botón de Registro */}
-          <View className="w-full mt-2">
+          <View style={styles.buttonWrapper}>
             <CustomButton
               title="Registrarse"
               onPress={() => console.log("Registrado!")}
@@ -98,14 +87,10 @@ const RegisterScreen = () => {
           </View>
 
           {/* Enlace para volver al Login */}
-          <View className="flex-row mt-8 justify-center">
-            <Text className="text-[#4A5565] text-sm font-normal">
-              ¿Ya tienes una cuenta?{" "}
-            </Text>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
             <TouchableOpacity onPress={() => console.log("Ir a Login")}>
-              <Text className="text-[#155DFC] font-inter text-sm">
-                Iniciar Sesión
-              </Text>
+              <Text style={styles.linkText}>Iniciar Sesión</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -113,5 +98,82 @@ const RegisterScreen = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F0FDF4", // Verde claro de PetLodge
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 16,
+  },
+  card: {
+    backgroundColor: "white",
+    width: "100%",
+    maxWidth: 360,
+    padding: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    // Sombras para Android
+    elevation: 8,
+    // Sombras para iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#DCFCE7",
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  logo: {
+    width: 48,
+    height: 48,
+  },
+  title: {
+    color: "#101828",
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: "#4A5565",
+    fontSize: 16,
+    fontWeight: "400",
+    marginBottom: 32,
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  buttonWrapper: {
+    width: "100%",
+    marginTop: 16,
+  },
+  footer: {
+    flexDirection: "row",
+    marginTop: 32,
+    justifyContent: "center",
+  },
+  footerText: {
+    color: "#4A5565",
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  linkText: {
+    color: "#155DFC",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+});
 
 export default RegisterScreen;

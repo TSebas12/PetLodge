@@ -2,6 +2,7 @@ import React from "react";
 import {
   Image,
   ImageSourcePropType,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -12,7 +13,7 @@ interface Props {
   placeholder: string;
   isPassword?: boolean;
   icon?: ImageSourcePropType;
-  editable?: boolean; // <-- Agregamos esto a la Interface
+  editable?: boolean;
 }
 
 const CustomInput = ({
@@ -23,33 +24,61 @@ const CustomInput = ({
   editable = true,
 }: Props) => {
   return (
-    <View className="w-full mb-4">
-      <Text className="text-[#364153] text-[14px] font-medium mb-2 leading-5">
-        {label}
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.label}>{label}</Text>
 
-      <View className="relative justify-center">
+      <View style={styles.inputWrapper}>
         <TextInput
           placeholder={placeholder}
           secureTextEntry={isPassword}
-          editable={editable} // <-- Se lo pasamos al TextInput original
+          editable={editable}
           placeholderTextColor="rgba(10, 10, 10, 0.50)"
-          // Añadimos una pequeña lógica visual: si no es editable, el fondo se ve ligeramente gris
-          className={`w-full h-[50px] border border-[#D1D5DC] rounded-[10px] pl-[48px] text-[16px] text-[#101828] ${
-            !editable ? "bg-[#F9FAFB]" : "bg-white"
-          }`}
+          style={[styles.input, !editable && styles.inputDisabled]}
         />
-        {/* Renderizamos la imagen solo si pasas un icono */}
         {icon && (
-          <Image
-            source={icon}
-            style={{ width: 20, height: 20, position: "absolute", left: 16 }}
-            resizeMode="contain"
-          />
+          <Image source={icon} style={styles.icon} resizeMode="contain" />
         )}
       </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    marginBottom: 16,
+  },
+  label: {
+    color: "#364153",
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  inputWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#D1D5DC",
+    borderRadius: 10,
+    paddingLeft: 48,
+    fontSize: 16,
+    color: "#101828",
+    backgroundColor: "white",
+  },
+  inputDisabled: {
+    backgroundColor: "#F9FAFB",
+  },
+  icon: {
+    width: 20,
+    height: 20,
+    position: "absolute",
+    left: 16,
+  },
+});
 
 export default CustomInput;

@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import {
   Image,
-  SafeAreaView,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import Footer from "../components/Footer";
@@ -24,18 +25,12 @@ const EditProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFB]">
+    <SafeAreaView style={styles.safeArea}>
       {/* Header Fijo Superior */}
-      <View className="w-full bg-white px-4 py-4 flex-row justify-between items-center border-b border-[#E5E7EB]">
-        <View className="flex-row items-center">
-          <Image
-            source={Logo}
-            style={{ width: 32, height: 32 }}
-            resizeMode="contain"
-          />
-          <Text className="text-[#101828] text-xl font-bold ml-2">
-            PetLodge
-          </Text>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
+          <Text style={styles.headerTitle}>PetLodge</Text>
         </View>
 
         <TouchableOpacity
@@ -44,7 +39,7 @@ const EditProfileScreen = () => {
         >
           <Image
             source={LogoutIcon}
-            style={{ width: 20, height: 20, tintColor: "#4A5565" }}
+            style={styles.logoutIcon}
             resizeMode="contain"
           />
         </TouchableOpacity>
@@ -52,88 +47,74 @@ const EditProfileScreen = () => {
 
       {/* Contenido con Scroll */}
       <ScrollView
-        contentContainerStyle={{
-          paddingBottom: 40,
-          paddingTop: 30,
-        }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        className="flex-1 px-4"
+        style={styles.scrollView}
       >
-        <View className="w-full mb-6">
-          <Text className="text-[#101828] text-[30px] font-bold leading-[36px]">
+        <View style={styles.titleContainer}>
+          <Text style={styles.mainTitle}>
             {isEditing ? "Editar Perfil de Usuario" : "Perfil de Usuario"}
           </Text>
-          <Text className="text-[#4A5565] text-base mt-2">
+          <Text style={styles.subtitle}>
             {isEditing
               ? "Modifica tus datos personales"
               : "Tu información personal"}
           </Text>
         </View>
 
-        <View
-          className="w-full bg-white p-6 rounded-[14px] border border-[#E5E7EB] shadow-sm"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            elevation: 2,
-          }}
-        >
-          <View className="w-full gap-y-1">
+        <View style={styles.card}>
+          <View style={styles.inputGroup}>
             <CustomInput
               label="Nombre Completo"
-              placeholder="Juan Pérez"
+              placeholder=""
               icon={UserIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Cédula"
-              placeholder="112344321"
+              placeholder=""
               icon={IdIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Correo Electrónico"
-              placeholder="juan.perez@example.com"
+              placeholder=""
               icon={MailIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Teléfono"
-              placeholder="8888-8888"
+              placeholder=""
               icon={PhoneIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Dirección"
-              placeholder="Dirección ejemplo"
+              placeholder=""
               icon={MapIcon}
               editable={isEditing}
             />
           </View>
 
           {/* Sección de Botones */}
-          <View className="w-full mt-6 pt-6 border-t border-[#E5E7EB]">
+          <View style={styles.buttonSection}>
             {!isEditing ? (
               <CustomButton
                 title="Editar Perfil"
                 onPress={() => setIsEditing(true)}
               />
             ) : (
-              <View className="gap-y-3">
-                {/* Botón de Cancelar arriba en Rojo */}
+              <View style={styles.editingButtons}>
                 <CustomButton
                   title="Cancelar"
                   type="danger"
                   onPress={() => setIsEditing(false)}
                 />
-
-                {/* Botón de Guardar abajo en Verde */}
+                <View style={{ height: 12 }} />
                 <CustomButton
                   title="Guardar Cambios"
                   type="primary"
@@ -152,5 +133,91 @@ const EditProfileScreen = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  header: {
+    width: "100%",
+    backgroundColor: "white",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+  },
+  headerTitle: {
+    color: "#101828",
+    fontSize: 20,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+  logoutIcon: {
+    width: 20,
+    height: 20,
+    tintColor: "#4A5565",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingTop: 30,
+    paddingHorizontal: 16,
+  },
+  titleContainer: {
+    width: "100%",
+    marginBottom: 24,
+  },
+  mainTitle: {
+    color: "#101828",
+    fontSize: 30,
+    fontWeight: "700",
+    lineHeight: 36,
+  },
+  subtitle: {
+    color: "#4A5565",
+    fontSize: 16,
+    marginTop: 8,
+  },
+  card: {
+    width: "100%",
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  inputGroup: {
+    width: "100%",
+  },
+  buttonSection: {
+    width: "100%",
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  editingButtons: {
+    width: "100%",
+  },
+});
 
 export default EditProfileScreen;
