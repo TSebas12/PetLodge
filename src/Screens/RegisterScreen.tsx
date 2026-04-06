@@ -1,5 +1,7 @@
-import React from "react";
+import axios from "axios"; // Asegúrate de haber hecho: npm install axios
+import React, { useState } from "react"; // Importamos useState
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -11,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 
-// Importación del Logo y los Iconos
+// ... tus imports de imágenes se quedan igual ...
 const Logo = require("../../assets/LogoPetLodge.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
 const IdIcon = require("../../assets/IconoTarjeta.webp");
@@ -21,54 +23,105 @@ const MapIcon = require("../../assets/IconoUbicacion.webp");
 const LockIcon = require("../../assets/IconoContrasena.webp");
 
 const RegisterScreen = () => {
+  // 1. Estados para capturar el texto
+  const [fullName, setFullName] = useState("");
+  const [cedula, setCedula] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [password, setPassword] = useState("");
+
+  // 2. Función para enviar al Backend
+  const handleRegister = async () => {
+    // Validar que no haya campos vacíos
+    if (!fullName || !cedula || !email || !password) {
+      Alert.alert("Error", "Por favor completa los campos obligatorios");
+      return;
+    }
+
+    try {
+      // REEMPLAZA ESTA IP POR LA TUYA
+      const API_URL = "http://192.168.1.40:3000/api/users/register";
+
+      const response = await axios.post(API_URL, {
+        fullName,
+        cedula,
+        email,
+        phone,
+        address,
+        password,
+      });
+
+      if (response.status === 201) {
+        Alert.alert("¡Éxito!", "Dueño registrado en PetLodge");
+        // Aquí podrías limpiar el formulario o navegar al login
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "Error",
+        "No se pudo conectar con el servidor. Revisa la IP.",
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Tarjeta Blanca (Card) */}
         <View style={styles.card}>
-          {/* Logo */}
           <View style={styles.iconContainer}>
             <Image source={Logo} style={styles.logo} resizeMode="contain" />
           </View>
 
-          {/* Títulos */}
           <Text style={styles.title}>Registro de Usuario</Text>
           <Text style={styles.subtitle}>
             Completa tus datos para crear una cuenta
           </Text>
 
-          {/* Formulario Extendido */}
+          {/* 3. Agregamos value y onChangeText a cada Input */}
           <CustomInput
             label="Nombre Completo"
             placeholder="Ingrese su nombre completo"
             icon={UserIcon}
+            value={fullName}
+            onChangeText={(text) => setFullName(text)}
           />
 
           <CustomInput
             label="Cédula"
             placeholder="Ingrese su número de cédula"
             icon={IdIcon}
+            value={cedula}
+            onChangeText={(text) => setCedula(text)}
           />
 
           <CustomInput
             label="Correo Electrónico"
             placeholder="Ingrese su correo electrónico"
             icon={MailIcon}
+            value={email}
+            onChangeText={(text) => setEmail(text)}
+            keyboardType="email-address"
           />
 
           <CustomInput
             label="Teléfono"
             placeholder="Ingrese su número de teléfono"
             icon={PhoneIcon}
+            value={phone}
+            onChangeText={(text) => setPhone(text)}
+            keyboardType="phone-pad"
           />
 
           <CustomInput
             label="Dirección"
             placeholder="Ingrese su dirección"
             icon={MapIcon}
+            value={address}
+            onChangeText={(text) => setAddress(text)}
           />
 
           <CustomInput
@@ -76,17 +129,15 @@ const RegisterScreen = () => {
             placeholder="Ingrese su contraseña"
             isPassword
             icon={LockIcon}
+            value={password}
+            onChangeText={(text) => setPassword(text)}
           />
 
-          {/* Botón de Registro */}
           <View style={styles.buttonWrapper}>
-            <CustomButton
-              title="Registrarse"
-              onPress={() => console.log("Registrado!")}
-            />
+            {/* 4. Conectamos la función al botón */}
+            <CustomButton title="Registrarse" onPress={handleRegister} />
           </View>
 
-          {/* Enlace para volver al Login */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
             <TouchableOpacity onPress={() => console.log("Ir a Login")}>

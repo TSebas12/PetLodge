@@ -8,12 +8,16 @@ import {
   View,
 } from "react-native";
 
+// 1. Agregamos value y onChangeText a la Interface
 interface Props {
   label: string;
   placeholder: string;
   isPassword?: boolean;
   icon?: ImageSourcePropType;
   editable?: boolean;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
 }
 
 const CustomInput = ({
@@ -22,6 +26,9 @@ const CustomInput = ({
   isPassword,
   icon,
   editable = true,
+  value,
+  onChangeText,
+  keyboardType = "default",
 }: Props) => {
   return (
     <View style={styles.container}>
@@ -32,6 +39,9 @@ const CustomInput = ({
           placeholder={placeholder}
           secureTextEntry={isPassword}
           editable={editable}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
           placeholderTextColor="rgba(10, 10, 10, 0.50)"
           style={[styles.input, !editable && styles.inputDisabled]}
         />
