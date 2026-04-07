@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  Alert,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -19,17 +20,15 @@ const Logo = require("../../assets/LogoPetLodge.webp");
 const MailIcon = require("../../assets/IconoCorreo.webp");
 const LockIcon = require("../../assets/IconoContrasena.webp");
 
-// Iconos para el modal de error
 const IconoAlerta = require("../../assets/IconoAlerta.webp");
 const IconoX = require("../../assets/IconoX.webp");
 
 const LoginScreen = () => {
-  const router = useRouter(); // 2. Inicializamos el router
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Estados para el Modal de Error
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [modalData, setModalData] = useState({
     title: "",
@@ -38,7 +37,6 @@ const LoginScreen = () => {
   });
 
   const handleLogin = async () => {
-    // 1. Validación de campos
     if (!email || !password) {
       setModalData({
         title: "Campos incompletos",
@@ -50,25 +48,49 @@ const LoginScreen = () => {
     }
 
     setLoading(true);
-    const delay = new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
-      const [response] = await Promise.all([
-        fetch("http://10.153.64.43:3000/api/users/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+      // AJUSTE DE URL: Si es Web usa localhost, si es móvil usa la IP
+      const API_URL = "http://10.153.64.43:3000/api/users/login";
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
         }),
-        delay,
-      ]);
+      });
 
       const data = await response.json();
 
       if (response.ok) {
-        console.log("CORRECTO:", data.message);
-        Alert.alert("Éxito", "Bienvenido a PetLodge");
+        if (data.user) {
+          // --- PRUEBA DE PERSISTENCIA HÍBRIDA ---
+          try {
+            if (Platform.OS === "web") {
+              // En Web usamos localStorage si SecureStore da problemas
+              localStorage.setItem("userSession", JSON.stringify(data.user));
+              console.log("LOGIN EXITOSO: Guardado en localStorage (Web)");
+            } else {
+              await SecureStore.setItemAsync(
+                "userSession",
+                JSON.stringify(data.user),
+              );
+              console.log("LOGIN EXITOSO: Guardado en SecureStore (Móvil)");
+            }
+          } catch (storageError) {
+            console.warn(
+              "Error al persistir sesión, pero continuando...",
+              storageError,
+            );
+          }
+
+          router.replace("/home" as any);
+        } else {
+          throw new Error("Datos de usuario no recibidos.");
+        }
       } else {
-        console.log("INCORRECTO:", data.message);
         setModalData({
           title: "Acceso Denegado",
           subtitle: data.message || "Correo o contraseña incorrectos.",
@@ -76,11 +98,15 @@ const LoginScreen = () => {
         });
         setShowErrorModal(true);
       }
-    } catch (error) {
-      console.log("ERROR DE RED:", error);
+    } catch (error: any) {
+      console.error("ERROR DETALLADO EN LOGIN:", error.message);
+
       setModalData({
         title: "Error de Conexión",
-        subtitle: "No pudimos conectar con el servidor. Revisa tu internet.",
+        subtitle:
+          Platform.OS === "web"
+            ? "No se pudo conectar al servidor local. Verifica que el backend esté corriendo y el CORS habilitado."
+            : "No pudimos conectar con el servidor. Revisa tu IP local.",
         icon: IconoX,
       });
       setShowErrorModal(true);

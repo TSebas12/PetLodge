@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,11 +11,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Componentes
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import Footer from "../components/Footer";
 
-// Importación de Iconos y Logo
+// Activos
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
@@ -22,7 +27,57 @@ const PhoneIcon = require("../../assets/IconoTelefono.webp");
 const MapIcon = require("../../assets/IconoUbicacion.webp");
 
 const EditProfileScreen = () => {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+
+  // 1. Control de montaje
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // 2. Obtener datos y validar sesión (Sin parpadeo de carga)
+  const loadUserData = useCallback(async () => {
+    try {
+      let session = null;
+      if (Platform.OS === "web") {
+        session = localStorage.getItem("userSession");
+      } else {
+        session = await SecureStore.getItemAsync("userSession");
+      }
+
+      if (session) {
+        setUserData(JSON.parse(session));
+      } else {
+        if (isMounted) router.replace("/");
+      }
+    } catch (error) {
+      console.error("Error en sesión:", error);
+      if (isMounted) router.replace("/");
+    }
+  }, [isMounted, router]);
+
+  useEffect(() => {
+    if (isMounted) {
+      loadUserData();
+    }
+  }, [isMounted, loadUserData]);
+
+  // 3. Logout Híbrido
+  const handleLogout = async () => {
+    try {
+      if (Platform.OS === "web") {
+        localStorage.removeItem("userSession");
+      } else {
+        await SecureStore.deleteItemAsync("userSession");
+      }
+      router.replace("/");
+    } catch (error) {
+      console.error("Error al salir:", error);
+      router.replace("/");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -33,10 +88,7 @@ const EditProfileScreen = () => {
           <Text style={styles.headerTitle}>PetLodge</Text>
         </View>
 
-        <TouchableOpacity
-          onPress={() => console.log("Logout")}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
           <Image
             source={LogoutIcon}
             style={styles.logoutIcon}
@@ -45,7 +97,6 @@ const EditProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Contenido con Scroll */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -53,12 +104,12 @@ const EditProfileScreen = () => {
       >
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>
-            {isEditing ? "Editar Perfil de Usuario" : "Perfil de Usuario"}
+            {isEditing ? "Editar Perfil" : "Mi Perfil"}
           </Text>
           <Text style={styles.subtitle}>
             {isEditing
               ? "Modifica tus datos personales"
-              : "Tu información personal"}
+              : "Tu información personal registrada"}
           </Text>
         </View>
 
@@ -66,35 +117,35 @@ const EditProfileScreen = () => {
           <View style={styles.inputGroup}>
             <CustomInput
               label="Nombre Completo"
-              placeholder=""
+              value={userData?.fullName || ""}
               icon={UserIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Cédula"
-              placeholder=""
+              value={userData?.cedula || ""}
               icon={IdIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Correo Electrónico"
-              placeholder=""
+              value={userData?.email || ""}
               icon={MailIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Teléfono"
-              placeholder=""
+              value={userData?.phone || ""}
               icon={PhoneIcon}
               editable={isEditing}
             />
 
             <CustomInput
               label="Dirección"
-              placeholder=""
+              value={userData?.address || ""}
               icon={MapIcon}
               editable={isEditing}
             />
@@ -110,18 +161,15 @@ const EditProfileScreen = () => {
             ) : (
               <View style={styles.editingButtons}>
                 <CustomButton
-                  title="Cancelar"
-                  type="danger"
+                  title="Guardar Cambios"
+                  type="primary"
                   onPress={() => setIsEditing(false)}
                 />
                 <View style={{ height: 12 }} />
                 <CustomButton
-                  title="Guardar Cambios"
-                  type="primary"
-                  onPress={() => {
-                    console.log("Guardado");
-                    setIsEditing(false);
-                  }}
+                  title="Cancelar"
+                  type="danger"
+                  onPress={() => setIsEditing(false)}
                 />
               </View>
             )}

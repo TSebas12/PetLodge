@@ -11,7 +11,7 @@ import {
 // 1. Agregamos value y onChangeText a la Interface
 interface Props {
   label: string;
-  placeholder: string;
+  placeholder?: string;
   isPassword?: boolean;
   icon?: ImageSourcePropType;
   editable?: boolean;

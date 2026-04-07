@@ -5,7 +5,7 @@ interface PetItemProps {
   name: string;
   breed: string;
   status: string;
-  image?: string; // URL o require
+  image?: string;
 }
 
 const PetItem = ({ name, breed, status, image }: PetItemProps) => (

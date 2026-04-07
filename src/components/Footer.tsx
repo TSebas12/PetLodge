@@ -1,7 +1,8 @@
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-// Importamos el hook para detectar el área segura
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Cambiamos useSegments por usePathname para mayor precisión
+import { usePathname, useRouter } from "expo-router";
 
 const HomeIcon = require("../../assets/IconoCasa.webp");
 const PetsIcon = require("../../assets/IconoHuella.webp");
@@ -10,39 +11,61 @@ const NoticesIcon = require("../../assets/IconoCampana.webp");
 const ProfileIcon = require("../../assets/IconoUsuario.webp");
 
 const Footer = () => {
-  const insets = useSafeAreaInsets(); // <--- Obtenemos los bordes del cel
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const ACTIVE_COLOR = "#00A63E";
+  const INACTIVE_COLOR = "#6A7282";
+
+  const renderTab = (routePath: string, label: string, icon: any) => {
+    // Comparamos si el pathname actual contiene la ruta del tab
+    // Usamos .includes o comparacion directa
+    const isActive =
+      pathname === routePath || (pathname === "/" && routePath === "/home");
+
+    return (
+      <TouchableOpacity
+        style={styles.tab}
+        activeOpacity={0.6}
+        onPress={() => router.replace(routePath as any)}
+      >
+        <Image
+          source={icon}
+          style={[
+            styles.icon,
+            { tintColor: isActive ? ACTIVE_COLOR : INACTIVE_COLOR },
+          ]}
+          resizeMode="contain"
+        />
+        <Text
+          style={[
+            styles.tabText,
+            {
+              color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
+              fontWeight: isActive ? "700" : "400",
+            },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View
       style={[
         styles.container,
-        { paddingBottom: insets.bottom > 0 ? insets.bottom : 10 }, // <--- Agregamos el espacio de seguridad
+        { paddingBottom: insets.bottom > 0 ? insets.bottom : 10 },
       ]}
     >
-      <TouchableOpacity style={styles.tab} activeOpacity={0.6}>
-        <Image source={HomeIcon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.tabText}>Inicio</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tab} activeOpacity={0.6}>
-        <Image source={PetsIcon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.tabText}>Mascotas</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tab} activeOpacity={0.6}>
-        <Image source={BookingIcon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.tabText}>Reservas</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tab} activeOpacity={0.6}>
-        <Image source={NoticesIcon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.tabText}>Avisos</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tab} activeOpacity={0.6}>
-        <Image source={ProfileIcon} style={styles.icon} resizeMode="contain" />
-        <Text style={styles.tabText}>Perfil</Text>
-      </TouchableOpacity>
+      {/* IMPORTANTE: Las rutas deben llevar el "/" inicial */}
+      {renderTab("/home", "Inicio", HomeIcon)}
+      {renderTab("/pets", "Mascotas", PetsIcon)}
+      {renderTab("/bookings", "Reservas", BookingIcon)}
+      {renderTab("/notices", "Avisos", NoticesIcon)}
+      {renderTab("/profile", "Perfil", ProfileIcon)}
     </View>
   );
 };
@@ -56,11 +79,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    // Quitamos el height fijo de 64 para que crezca con el padding del safe area
     minHeight: 64,
     paddingHorizontal: 8,
     paddingTop: 8,
-    // Sombras
     elevation: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
@@ -76,12 +97,9 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
-    tintColor: "#6A7282",
   },
   tabText: {
-    color: "#6A7282",
     fontSize: 11,
-    fontWeight: "400",
     marginTop: 4,
   },
 });

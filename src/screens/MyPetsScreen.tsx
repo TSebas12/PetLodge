@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
   Platform,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,64 +12,51 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Componentes
+// Componentes del proyecto
+import CustomButtonIcon from "../components/CustomButtonIcon";
 import Footer from "../components/Footer";
-import MyPetsCard from "../components/PetCard";
-import ActiveReservationsCard from "../components/ReservationCard";
-import StatCard from "../components/StatCard";
+import PetCard from "../components/MyPetCard";
 
-// Activos
+// Importación de activos
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
-const MiniLogo = require("../../assets/LogoPetLodge.webp");
-const CalendarBlue = require("../../assets/IconoCalendarioA.webp");
-const CalendarOrange = require("../../assets/IconoCalendarioN.webp");
+const IconoMas = require("../../assets/IconoPlus.webp");
 
-const HomeScreen = () => {
+const MyPetsScreen = () => {
   const router = useRouter();
-  const [userData, setUserData] = useState<any>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // 1. Marcar como montado al iniciar
+  // 1. Control de montaje para evitar errores de navegación en Root Layout
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 2. Función para obtener datos (Sin estado isLoading para evitar parpadeos)
-  const getUserData = useCallback(async () => {
+  // 2. Función de validación de sesión (Igual al Home)
+  const checkSession = useCallback(async () => {
     try {
       let session = null;
-
       if (Platform.OS === "web") {
         session = localStorage.getItem("userSession");
       } else {
         session = await SecureStore.getItemAsync("userSession");
       }
 
-      if (session) {
-        setUserData(JSON.parse(session));
-      } else {
-        if (isMounted) {
-          router.replace("/");
-        }
+      if (!session && isMounted) {
+        router.replace("/");
       }
     } catch (error) {
-      console.error("Error cargando sesión:", error);
+      console.error("Error validando sesión:", error);
       if (isMounted) router.replace("/");
-    } finally {
-      setRefreshing(false);
     }
   }, [isMounted, router]);
 
-  // 3. Disparar la carga al montar
   useEffect(() => {
     if (isMounted) {
-      getUserData();
+      checkSession();
     }
-  }, [isMounted, getUserData]);
+  }, [isMounted, checkSession]);
 
-  // 4. Función para cerrar sesión
+  // 3. Función de Logout híbrida
   const handleLogout = async () => {
     try {
       if (Platform.OS === "web") {
@@ -80,18 +66,29 @@ const HomeScreen = () => {
       }
       router.replace("/");
     } catch (error) {
-      console.error("Error al borrar sesión:", error);
+      console.error("Error al cerrar sesión:", error);
       router.replace("/");
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    getUserData();
-  };
+  // Datos de prueba (Luego los traerás de tu API de MongoDB)
+  const myPets = [
+    {
+      id: "1",
+      name: "Max",
+      breed: "Golden Retriever",
+      type: "Perro",
+      status: "Activo",
+    },
+    {
+      id: "2",
+      name: "Luna",
+      breed: "Gato Siamés",
+      type: "Gato",
+      status: "Activo",
+    },
+  ];
 
-  // Renderizamos directamente. Si userData es null, mostrará "Bienvenido"
-  // instantáneamente sin cortes de pantalla.
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header Fijo Superior */}
@@ -115,65 +112,38 @@ const HomeScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#00A63E"]}
-          />
-        }
       >
-        {/* Títulos de Bienvenida */}
+        {/* Títulos */}
         <View style={styles.titleContainer}>
-          <Text style={styles.mainTitle}>
-            ¡Hola, {userData?.fullName?.split(" ")[0] || "Bienvenido"}!
-          </Text>
+          <Text style={styles.mainTitle}>Mis Mascotas</Text>
           <Text style={styles.subtitle}>
-            Gestiona tus mascotas y reservas activas
+            Gestiona tus mascotas y sus perfiles registrados
           </Text>
         </View>
 
-        {/* Sección de Estadísticas */}
-        <View style={styles.statsContainer}>
-          <StatCard
-            label="Mascotas Registradas"
-            value="3"
-            icon={MiniLogo}
-            iconBackgroundColor="#DCFCE7"
-            iconTintColor="#15803D"
-          />
-
-          <View style={{ height: 16 }} />
-
-          <StatCard
-            label="Reservas Activas"
-            value="1"
-            icon={CalendarBlue}
-            iconBackgroundColor="#DBEAFE"
-            iconTintColor="#1D4ED8"
-          />
-
-          <View style={{ height: 16 }} />
-
-          <StatCard
-            label="Próximas Reservas"
-            value="1"
-            icon={CalendarOrange}
-            iconBackgroundColor="#FEF9C2"
-            iconTintColor="#A16207"
+        {/* Sección de Acción: Añadir Mascota */}
+        <View style={styles.addBtnContainer}>
+          <CustomButtonIcon
+            title="Añadir Mascota"
+            icon={IconoMas}
+            type="primary"
+            onPress={() => console.log("Navegar a Agregar Mascota")}
           />
         </View>
 
-        {/* Sección de Mis Mascotas */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Acceso Rápido a Mascotas</Text>
-          <MyPetsCard />
-        </View>
-
-        {/* Reservas Activas */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Reservas Recientes</Text>
-          <ActiveReservationsCard />
+        {/* Listado de Mascotas */}
+        <View style={styles.listContainer}>
+          {myPets.map((pet) => (
+            <PetCard
+              key={pet.id}
+              name={pet.name}
+              breed={pet.breed}
+              type={pet.type}
+              status={pet.status}
+              onEdit={() => console.log("Editando a", pet.name)}
+              onDelete={() => console.log("Eliminando a", pet.name)}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -222,13 +192,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 120, // Espacio para que el Footer no tape la última card
     paddingTop: 30,
     paddingHorizontal: 16,
   },
   titleContainer: {
     width: "100%",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   mainTitle: {
     color: "#101828",
@@ -241,24 +211,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 8,
   },
-  statsContainer: {
+  addBtnContainer: {
     width: "100%",
     marginBottom: 24,
   },
-  sectionContainer: {
+  listContainer: {
     width: "100%",
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: "#101828",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
 
-export default HomeScreen;
+export default MyPetsScreen;
