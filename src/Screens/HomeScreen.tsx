@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 20,
     paddingTop: 30,
     paddingHorizontal: 16,
   },

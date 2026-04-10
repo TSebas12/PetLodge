@@ -51,7 +51,7 @@ const LoginScreen = () => {
 
     try {
       // AJUSTE DE URL: Si es Web usa localhost, si es móvil usa la IP
-      const API_URL = "http://10.153.64.43:3000/api/users/login";
+      const API_URL = "http://192.168.1.40:3000/api/users/login";
 
       const response = await fetch(API_URL, {
         method: "POST",

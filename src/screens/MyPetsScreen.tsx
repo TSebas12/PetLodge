@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120, // Espacio para que el Footer no tape la última card
+    paddingBottom: 20,
     paddingTop: 30,
     paddingHorizontal: 16,
   },
