@@ -1,15 +1,8 @@
+import axios from "axios";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Componentes del proyecto
@@ -25,15 +18,16 @@ const IconoMas = require("../../assets/IconoPlus.webp");
 const MyPetsScreen = () => {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const [myPets, setMyPets] = useState([]); // Estado dinámico para mascotas
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Control de montaje para evitar errores de navegación en Root Layout
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 2. Función de validación de sesión (Igual al Home)
-  const checkSession = useCallback(async () => {
+  const loadPets = useCallback(async () => {
     try {
+      setIsLoading(true);
       let session = null;
       if (Platform.OS === "web") {
         session = localStorage.getItem("userSession");
@@ -41,20 +35,35 @@ const MyPetsScreen = () => {
         session = await SecureStore.getItemAsync("userSession");
       }
 
-      if (!session && isMounted) {
+      if (session) {
+        const parsed = JSON.parse(session);
+        const userId = parsed._id; // Obtenemos el ID del dueño de la sesión
+
+        // Configuración de URL según plataforma [cite: 5]
+        const API_URL =
+          Platform.OS === "android"
+            ? "http://192.168.1.40:3000"
+            : "http://localhost:3000";
+
+        // Petición al backend (Asegúrate de tener este endpoint: GET /api/pets/user/:id)
+        const response = await axios.get(`${API_URL}/api/pets/user/${userId}`);
+
+        if (response.status === 200) {
+          setMyPets(response.data);
+        }
+      } else if (isMounted) {
         router.replace("/");
       }
     } catch (error) {
-      console.error("Error validando sesión:", error);
-      if (isMounted) router.replace("/");
+      console.error("Error cargando mascotas:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [isMounted, router]);
 
   useEffect(() => {
-    if (isMounted) {
-      checkSession();
-    }
-  }, [isMounted, checkSession]);
+    if (isMounted) loadPets();
+  }, [isMounted, loadPets]);
 
   // 3. Función de Logout híbrida
   const handleLogout = async () => {
@@ -71,57 +80,25 @@ const MyPetsScreen = () => {
     }
   };
 
-  // Datos de prueba (Luego los traerás de tu API de MongoDB)
-  const myPets = [
-    {
-      id: "1",
-      name: "Max",
-      breed: "Golden Retriever",
-      type: "Perro",
-      status: "Activo",
-    },
-    {
-      id: "2",
-      name: "Luna",
-      breed: "Gato Siamés",
-      type: "Gato",
-      status: "Activo",
-    },
-  ];
+  const handleDeletePet = (id: string) => {
+    console.log("Eliminando mascota con ID:", id);
+    // Aquí irá luego el axios.delete
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header Fijo Superior */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
-          <Text style={styles.headerTitle}>PetLodge</Text>
-        </View>
+      {/* Header Fijo */}
+      {/* ... */}
 
-        <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
-          <Image
-            source={LogoutIcon}
-            style={styles.logoutIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Contenido con Scroll */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
         style={styles.scrollView}
       >
-        {/* Títulos */}
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>Mis Mascotas</Text>
-          <Text style={styles.subtitle}>
-            Gestiona tus mascotas y sus perfiles registrados
-          </Text>
+          <Text style={styles.subtitle}>Gestiona tus mascotas registradas</Text>
         </View>
 
-        {/* Sección de Acción: Añadir Mascota */}
         <View style={styles.addBtnContainer}>
           <CustomButtonIcon
             title="Añadir Mascota"
@@ -131,23 +108,29 @@ const MyPetsScreen = () => {
           />
         </View>
 
-        {/* Listado de Mascotas */}
+        {/* Listado Dinámico */}
         <View style={styles.listContainer}>
-          {myPets.map((pet) => (
-            <PetCard
-              key={pet.id}
-              name={pet.name}
-              breed={pet.breed}
-              type={pet.type}
-              status={pet.status}
-              onEdit={() => console.log("Editando a", pet.name)}
-              onDelete={() => console.log("Eliminando a", pet.name)}
-            />
-          ))}
+          {isLoading ? (
+            <Text>Cargando mascotas...</Text>
+          ) : myPets.length > 0 ? (
+            myPets.map((pet: any) => (
+              <PetCard
+                key={pet._id} // Usamos _id de MongoDB
+                name={pet.nombre}
+                breed={pet.raza}
+                type={pet.tipo}
+                status={pet.estado || "Activo"}
+                onEdit={() => router.push(`/EditPetScreen?id=${pet._id}`)}
+                onDelete={() => handleDeletePet(pet._id)}
+              />
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              No tienes mascotas registradas aún.
+            </Text>
+          )}
         </View>
       </ScrollView>
-
-      {/* Footer Fijo */}
       <Footer />
     </SafeAreaView>
   );
@@ -217,6 +200,12 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     width: "100%",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#9CA3AF",
+    marginTop: 20,
+    fontSize: 16,
   },
 });
 
