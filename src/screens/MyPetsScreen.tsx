@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Image,
   Platform,
@@ -127,7 +127,7 @@ const MyPetsScreen = () => {
             title="Añadir Mascota"
             icon={IconoMas}
             type="primary"
-            onPress={() => console.log("Navegar a Agregar Mascota")}
+            onPress={() => router.push("/RegisterPetScreen")}
           />
         </View>
 
