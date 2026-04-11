@@ -30,6 +30,12 @@ const PhoneIcon = require("../../assets/IconoTelefono.webp");
 const MapIcon = require("../../assets/IconoUbicacion.webp");
 const CheckIcon = require("../../assets/IconoCheck.webp");
 const AlertIcon = require("../../assets/IconoAlerta.webp");
+const IconoX = require("../../assets/IconoX.webp");
+
+// Expresiones regulares para validación
+const phoneRegex = /^[0-9]{8}$/;
+const cedulaRegex = /^[0-9]{9}$/;
+const emailRegex = /\S+@\S+\.\S+/;
 
 const EditProfileScreen = () => {
   const router = useRouter();
@@ -41,6 +47,15 @@ const EditProfileScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [modalSuccess, setModalSuccess] = useState(false);
   const [modalCancelVisible, setModalCancelVisible] = useState(false);
+
+  // Estado para errores de validación y servidor
+  const [errorModal, setErrorModal] = useState({
+    visible: false,
+    title: "",
+    subtitle: "",
+    icon: AlertIcon,
+  });
+
   const [form, setForm] = useState({
     fullName: "",
     cedula: "",
@@ -88,12 +103,10 @@ const EditProfileScreen = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 1. Esta función ahora solo abre el modal
   const handlePressCancel = () => {
     setModalCancelVisible(true);
   };
 
-  // 2. Esta función es la que realmente resetea todo si confirman
   const confirmCancel = () => {
     setForm({
       fullName: userData?.fullName || "",
@@ -107,14 +120,54 @@ const EditProfileScreen = () => {
   };
 
   const handleSaveChanges = async () => {
+    // --- 1. VALIDACIONES DE FORMATO ---
+    if (!form.fullName || !form.cedula || !form.email || !form.phone) {
+      setErrorModal({
+        visible: true,
+        title: "Campos incompletos",
+        subtitle:
+          "Por favor, completa todos los campos para actualizar tu perfil.",
+        icon: AlertIcon,
+      });
+      return;
+    }
+
+    if (!cedulaRegex.test(form.cedula)) {
+      setErrorModal({
+        visible: true,
+        title: "Cédula inválida",
+        subtitle: "La cédula debe tener exactamente 9 dígitos numéricos.",
+        icon: AlertIcon,
+      });
+      return;
+    }
+
+    if (!emailRegex.test(form.email)) {
+      setErrorModal({
+        visible: true,
+        title: "Correo inválido",
+        subtitle: "Ingresa un correo electrónico válido (ejemplo@mail.com).",
+        icon: AlertIcon,
+      });
+      return;
+    }
+
+    if (!phoneRegex.test(form.phone)) {
+      setErrorModal({
+        visible: true,
+        title: "Teléfono inválido",
+        subtitle: "El teléfono debe tener 8 dígitos, sin espacios ni letras.",
+        icon: AlertIcon,
+      });
+      return;
+    }
+
+    // --- 2. ENVÍO AL SERVIDOR ---
     setIsLoading(true);
     const startTime = Date.now();
 
     try {
-      const API_URL =
-        Platform.OS === "android"
-          ? "http://192.168.1.40:3000"
-          : "http://localhost:3000";
+      const API_URL = "http://192.168.1.40:3000";
 
       const response = await fetch(`${API_URL}/api/users/${userData._id}`, {
         method: "PUT",
@@ -125,6 +178,7 @@ const EditProfileScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Actualizar sesión local
         const updatedSession = { ...userData, ...data.user };
         if (Platform.OS === "web") {
           localStorage.setItem("userSession", JSON.stringify(updatedSession));
@@ -137,6 +191,7 @@ const EditProfileScreen = () => {
 
         setUserData(updatedSession);
 
+        // Delay estético para el loader
         const duration = Date.now() - startTime;
         if (duration < 1200) {
           await new Promise((resolve) => setTimeout(resolve, 1200 - duration));
@@ -145,10 +200,25 @@ const EditProfileScreen = () => {
         setIsLoading(false);
         setIsEditing(false);
         setModalSuccess(true);
+      } else {
+        // Error del backend (Cédula o Email duplicados, etc.)
+        setIsLoading(false);
+        setErrorModal({
+          visible: true,
+          title: "Error al actualizar",
+          subtitle: data.message || "No se pudieron guardar los cambios.",
+          icon: IconoX,
+        });
       }
     } catch (error) {
       console.error("Error al guardar:", error);
       setIsLoading(false);
+      setErrorModal({
+        visible: true,
+        title: "Error de red",
+        subtitle: "No se pudo conectar con el servidor. Revisa tu conexión.",
+        icon: IconoX,
+      });
     }
   };
 
@@ -204,6 +274,7 @@ const EditProfileScreen = () => {
               onChangeText={(t) => handleInputChange("cedula", t)}
               icon={IdIcon}
               editable={isEditing}
+              keyboardType="numeric"
             />
             <CustomInput
               label="Correo Electrónico"
@@ -211,6 +282,7 @@ const EditProfileScreen = () => {
               onChangeText={(t) => handleInputChange("email", t)}
               icon={MailIcon}
               editable={isEditing}
+              keyboardType="email-address"
             />
             <CustomInput
               label="Teléfono"
@@ -218,6 +290,7 @@ const EditProfileScreen = () => {
               onChangeText={(t) => handleInputChange("phone", t)}
               icon={PhoneIcon}
               editable={isEditing}
+              keyboardType="phone-pad"
             />
             <CustomInput
               label="Dirección"
@@ -264,7 +337,15 @@ const EditProfileScreen = () => {
         onConfirm={() => setModalSuccess(false)}
       />
 
-      {/* Modal de Confirmación de Cancelación */}
+      {/* Modal para errores de validación o duplicados */}
+      <SingleBtnModal
+        visible={errorModal.visible}
+        icon={errorModal.icon}
+        title={errorModal.title}
+        subtitle={errorModal.subtitle}
+        onConfirm={() => setErrorModal({ ...errorModal, visible: false })}
+      />
+
       <DoubleBtnModal
         visible={modalCancelVisible}
         icon={AlertIcon}
@@ -313,9 +394,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: "#4A5565",
-  },
-  scrollView: {
-    flex: 1,
   },
   scrollContent: {
     paddingBottom: 40,

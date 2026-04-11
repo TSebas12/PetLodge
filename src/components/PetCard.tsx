@@ -1,45 +1,91 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import CustomButtonIcon from "../components/CustomButtonIcon";
 import PetItem from "./PetItem";
 
-// Asumiendo que tienes un icono de "plus" o similar
 const AddIcon = require("../../assets/IconoPlus.webp");
 
-const MyPetsCard = () => {
-  const pets = [
-    { id: 1, name: "Max", breed: "Golden Retriever", status: "Activo" },
-    { id: 2, name: "Luna", breed: "Gato Siamés", status: "Activo" },
-    { id: 3, name: "Rocky", breed: "Bulldog Francés", status: "Activo" },
-  ];
+interface MyPetsCardProps {
+  ownerId: string | undefined;
+}
+
+const MyPetsCard = ({ ownerId }: MyPetsCardProps) => {
+  const router = useRouter();
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPets = async () => {
+    if (!ownerId) return;
+
+    try {
+      setLoading(true);
+      // Usamos la IP de tu servidor que pusiste en los otros archivos
+      const response = await axios.get(
+        `http://192.168.1.40:3000/api/pets/user/${ownerId}`,
+      );
+      // Solo mostramos las primeras 3 para el "Acceso Rápido"
+      setPets(response.data.slice(0, 3));
+    } catch (error) {
+      console.error("Error al obtener mascotas:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPets();
+  }, [ownerId]);
 
   return (
     <View style={styles.mainCard}>
       {/* Header de la Card */}
       <View style={styles.header}>
         <Text style={styles.title}>Mis Mascotas Registradas</Text>
-        <TouchableOpacity activeOpacity={0.7}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push("/pets")} // Asumiendo que tienes esta ruta
+        >
           <Text style={styles.seeAll}>Ver Todas</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Lista de Mascotas */}
+      {/* Lista de Mascotas Dinámica */}
       <View style={styles.listContainer}>
-        {pets.map((pet) => (
-          <PetItem
-            key={pet.id}
-            name={pet.name}
-            breed={pet.breed}
-            status={pet.status}
+        {loading ? (
+          <ActivityIndicator
+            size="small"
+            color="#00A63E"
+            style={{ marginVertical: 20 }}
           />
-        ))}
+        ) : pets.length > 0 ? (
+          pets.map((pet: any) => (
+            <PetItem
+              key={pet._id}
+              name={pet.nombre}
+              breed={pet.raza || pet.tipo}
+              status="Activo" // O podrías basarlo en alguna lógica de vacunas
+            />
+          ))
+        ) : (
+          <Text style={styles.noPetsText}>
+            No tienes mascotas registradas aún.
+          </Text>
+        )}
       </View>
 
-      {/* Botón Añadir Mascota - Usando el componente global */}
+      {/* Botón Añadir Mascota */}
       <View style={styles.buttonWrapper}>
         <CustomButtonIcon
           title="Añadir Mascota"
-          onPress={() => console.log("Añadir nueva mascota")}
+          onPress={() => console.log("Añadir Mascota")} // Ajusta a tu ruta real
           icon={AddIcon}
           type="primary"
         />
@@ -80,6 +126,12 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginBottom: 8,
+  },
+  noPetsText: {
+    textAlign: "center",
+    color: "#667085",
+    marginVertical: 15,
+    fontSize: 14,
   },
   buttonWrapper: {
     marginTop: 10,

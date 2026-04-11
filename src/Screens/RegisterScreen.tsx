@@ -33,6 +33,10 @@ const LogoPetLodge = require("../../assets/LogoPetLodge.webp");
 const RegisterScreen = () => {
   const router = useRouter();
 
+  const phoneRegex = /^[0-9]{8}$/; // Exactamente 8 dígitos numéricos
+  const cedulaRegex = /^[0-9]{9}$/; // Exactamente 9 dígitos numéricos
+  const emailRegex = /\S+@\S+\.\S+/; // Estructura básica de correo
+
   // 1. Estados para los campos
   const [fullName, setFullName] = useState("");
   const [cedula, setCedula] = useState("");
@@ -53,12 +57,48 @@ const RegisterScreen = () => {
 
   // 2. Función para enviar al Backend
   const handleRegister = async () => {
-    // Validación de campos obligatorios
-    if (!fullName || !cedula || !email || !password) {
+    // 1. Validación de campos vacíos
+    if (!fullName || !cedula || !email || !phone || !password) {
       setModalData({
         title: "Campos incompletos",
+        subtitle: "Por favor, completa todos los campos para continuar.",
+        icon: IconoAlerta,
+        onConfirm: () => setShowModal(false),
+      });
+      setShowModal(true);
+      return;
+    }
+
+    // 2. Validación de Cédula
+    if (!cedulaRegex.test(cedula)) {
+      setModalData({
+        title: "Cédula inválida",
+        subtitle: "La cédula debe contener exactamente 9 dígitos numéricos.",
+        icon: IconoAlerta,
+        onConfirm: () => setShowModal(false),
+      });
+      setShowModal(true);
+      return;
+    }
+
+    // 3. Validación de Teléfono
+    if (!phoneRegex.test(phone)) {
+      setModalData({
+        title: "Teléfono inválido",
+        subtitle: "El teléfono debe tener 8 dígitos, sin espacios ni letras.",
+        icon: IconoAlerta,
+        onConfirm: () => setShowModal(false),
+      });
+      setShowModal(true);
+      return;
+    }
+
+    // 4. Validación de Correo
+    if (!emailRegex.test(email)) {
+      setModalData({
+        title: "Correo inválido",
         subtitle:
-          "Por favor, completa los campos obligatorios para registrarte.",
+          "Por favor, ingresa un correo electrónico válido (micorreo@mail.com).",
         icon: IconoAlerta,
         onConfirm: () => setShowModal(false),
       });

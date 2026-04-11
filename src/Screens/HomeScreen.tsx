@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
@@ -29,15 +30,29 @@ const CalendarOrange = require("../../assets/IconoCalendarioN.webp");
 const HomeScreen = () => {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
+  const [petsCount, setPetsCount] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  // 1. Marcar como montado al iniciar
+  const API_URL = "http://192.168.1.40:3000";
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // 2. Función para obtener datos (Sin estado isLoading para evitar parpadeos)
+  // Función para obtener la cantidad de mascotas desde el servidor
+  const fetchPetsData = async (userId: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/pets/user/${userId}`);
+      if (Array.isArray(response.data)) {
+        setPetsCount(response.data.length);
+      }
+    } catch (error) {
+      console.error("Error al obtener estadísticas de mascotas:", error);
+    }
+  };
+
+  // Función para cargar sesión y disparar peticiones
   const getUserData = useCallback(async () => {
     try {
       let session = null;
@@ -49,11 +64,13 @@ const HomeScreen = () => {
       }
 
       if (session) {
-        setUserData(JSON.parse(session));
+        const parsed = JSON.parse(session);
+        setUserData(parsed);
+
+        // Una vez tenemos el ID del usuario, traemos el conteo real
+        await fetchPetsData(parsed._id);
       } else {
-        if (isMounted) {
-          router.replace("/");
-        }
+        if (isMounted) router.replace("/");
       }
     } catch (error) {
       console.error("Error cargando sesión:", error);
@@ -63,21 +80,16 @@ const HomeScreen = () => {
     }
   }, [isMounted, router]);
 
-  // 3. Disparar la carga al montar
   useEffect(() => {
     if (isMounted) {
       getUserData();
     }
   }, [isMounted, getUserData]);
 
-  // 4. Función para cerrar sesión
   const handleLogout = async () => {
     try {
-      if (Platform.OS === "web") {
-        localStorage.removeItem("userSession");
-      } else {
-        await SecureStore.deleteItemAsync("userSession");
-      }
+      if (Platform.OS === "web") localStorage.removeItem("userSession");
+      else await SecureStore.deleteItemAsync("userSession");
       router.replace("/");
     } catch (error) {
       console.error("Error al borrar sesión:", error);
@@ -90,11 +102,9 @@ const HomeScreen = () => {
     getUserData();
   };
 
-  // Renderizamos directamente. Si userData es null, mostrará "Bienvenido"
-  // instantáneamente sin cortes de pantalla.
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header Fijo Superior */}
+      {/* Header Fijo */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
@@ -123,7 +133,7 @@ const HomeScreen = () => {
           />
         }
       >
-        {/* Títulos de Bienvenida */}
+        {/* Bienvenida */}
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>
             ¡Hola, {userData?.fullName?.split(" ")[0] || "Bienvenido"}!
@@ -133,11 +143,11 @@ const HomeScreen = () => {
           </Text>
         </View>
 
-        {/* Sección de Estadísticas */}
+        {/* Sección de Estadísticas Dinámicas */}
         <View style={styles.statsContainer}>
           <StatCard
             label="Mascotas Registradas"
-            value="3"
+            value={petsCount.toString()}
             icon={MiniLogo}
             iconBackgroundColor="#DCFCE7"
             iconTintColor="#15803D"
@@ -167,7 +177,7 @@ const HomeScreen = () => {
         {/* Sección de Mis Mascotas */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Acceso Rápido a Mascotas</Text>
-          <MyPetsCard />
+          <MyPetsCard ownerId={userData?._id} />
         </View>
 
         {/* Reservas Activas */}
@@ -254,10 +264,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
-  },
-  loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
 
