@@ -115,7 +115,6 @@ const RegisterPetScreen = () => {
   };
 
   const handleSave = async () => {
-    // --- SOLUCIÓN: VALIDACIÓN DE CAMPOS ---
     if (
       !formData.nombre.trim() ||
       !formData.tipo.trim() ||
@@ -136,10 +135,10 @@ const RegisterPetScreen = () => {
         Platform.OS === "android"
           ? "http://10.0.2.2:3000"
           : "http://localhost:3000";
-      const petId = Array.isArray(id) ? id[0] : id;
 
       let response;
       if (isEditing) {
+        const petId = Array.isArray(id) ? id[0] : id;
         response = await axios.put(`${API_URL}/api/pets/${petId}`, formData);
       } else {
         const sessionStr =
@@ -154,11 +153,15 @@ const RegisterPetScreen = () => {
       }
 
       if (response.status === 200 || response.status === 201) {
+        if (!isEditing) {
+          setFormData(initialFormState);
+        }
+
         setModalConfig({
           title: isEditing ? "¡Actualizado!" : "¡Registrado!",
           msg: isEditing
             ? "Los cambios se guardaron correctamente."
-            : "Mascota registrada con éxito.",
+            : "Mascota registrada con éxito. Ya puedes registrar otra o volver al inicio.",
           icon: IconoCheck,
         });
         setModalVisible(true);
