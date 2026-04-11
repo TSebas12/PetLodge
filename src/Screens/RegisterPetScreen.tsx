@@ -1,8 +1,8 @@
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router"; // Añadimos useLocalSearchParams
 import * as SecureStore from "expo-secure-store";
-import { useState } from "react";
+import { useEffect, useState } from "react"; // Añadimos useEffect
 import {
   Image,
   Platform,
@@ -27,9 +27,12 @@ const LogoutIcon = require("../../assets/IconoSalida.webp");
 const IconoAlerta = require("../../assets/IconoAlerta.webp");
 const IconoCheck = require("../../assets/IconoCheck.webp");
 const IconUpload = require("../../assets/IconUpload.webp");
+const IconoVolver = require("../../assets/IconoVolver.webp");
 
 const RegisterPetScreen = () => {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const isEditing = !!id; // Booleano para saber si estamos editando
 
   // Estados de UI
   const [loading, setLoading] = useState(false);
@@ -56,12 +59,75 @@ const RegisterPetScreen = () => {
     cuidados: "",
   });
 
+  // EFECTO: Si es edición, cargar los datos actuales de la mascota
+  useEffect(() => {
+    if (isEditing) {
+      loadPetData();
+    }
+  }, [id]);
+
+  const loadPetData = async () => {
+    setLoading(true);
+    try {
+      const API_URL =
+        Platform.OS === "android"
+          ? "http://10.0.2.2:3000"
+          : "http://localhost:3000";
+
+      // Aseguramos que el id sea válido
+      if (!id) return;
+
+      console.log("Solicitando datos para mascota ID:", id);
+      const response = await axios.get(`${API_URL}/api/pets/${id}`);
+
+      if (response.status === 200 && response.data) {
+        console.log("Datos recibidos:", response.data);
+        setFormData({
+          nombre: response.data.nombre || "",
+          tipo: response.data.tipo || "",
+          raza: response.data.raza || "",
+          edad: response.data.edad ? response.data.edad.toString() : "",
+          sexo: response.data.sexo || "",
+          tamano: response.data.tamano || "",
+          foto: response.data.foto || "sample_url.jpg",
+          vacunado: response.data.vacunado ?? null,
+          condicionesMedicas: response.data.condicionesMedicas ?? null,
+          vetNombre: response.data.vetNombre || "",
+          vetTelefono: response.data.vetTelefono || "",
+          cuidados: response.data.cuidados || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando datos de mascota:", error);
+      setModalConfig({
+        title: "Error",
+        msg: "No se pudieron cargar los datos de la mascota.",
+        icon: IconoAlerta,
+      });
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (name: string, value: any) => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      handleInputChange("foto", result.assets[0].uri);
+    }
+  };
+
   const handleSave = async () => {
-    if (!formData.nombre || !formData.tipo || formData.vacunado === null) {
+    if (!formData.nombre || !formData.tipo) {
       setModalConfig({
         title: "Atención",
         msg: "Por favor completa los campos obligatorios.",
@@ -73,43 +139,46 @@ const RegisterPetScreen = () => {
 
     setLoading(true);
     try {
-      let session = null;
-      if (Platform.OS === "web") {
-        session = localStorage.getItem("userSession");
-      } else {
-        session = await SecureStore.getItemAsync("userSession");
-      }
-
-      if (!session) throw new Error("No hay sesión activa");
-      const user = JSON.parse(session);
-
       const API_URL =
         Platform.OS === "android"
           ? "http://10.0.2.2:3000"
           : "http://localhost:3000";
 
-      const response = await axios.post(`${API_URL}/api/pets`, {
-        ...formData,
-        ownerId: user._id,
-      });
+      let response;
+      if (isEditing) {
+        // MODO EDICIÓN: PUT
+        response = await axios.put(`${API_URL}/api/pets/${id}`, formData);
+      } else {
+        // MODO REGISTRO: POST
+        let session =
+          Platform.OS === "web"
+            ? localStorage.getItem("userSession")
+            : await SecureStore.getItemAsync("userSession");
+        const user = JSON.parse(session || "{}");
+        response = await axios.post(`${API_URL}/api/pets`, {
+          ...formData,
+          ownerId: user._id,
+        });
+      }
 
-      if (response.status === 201 || response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setModalConfig({
           title: "¡Éxito!",
-          msg: "Mascota registrada correctamente.",
+          msg: isEditing
+            ? "Información actualizada correctamente."
+            : "Mascota registrada correctamente.",
           icon: IconoCheck,
         });
         setModalVisible(true);
         setTimeout(() => {
           setModalVisible(false);
-          router.back();
-        }, 2000);
+          router.push("/pets");
+        }, 1500);
       }
     } catch (error) {
-      console.error(error);
       setModalConfig({
         title: "Error",
-        msg: "No se pudo conectar con el servidor.",
+        msg: "Hubo un problema con el servidor.",
         icon: IconoAlerta,
       });
       setModalVisible(true);
@@ -118,22 +187,8 @@ const RegisterPetScreen = () => {
     }
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      handleInputChange("foto", result.assets[0].uri);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* HEADER ADAPTADO DE FIGMA */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
@@ -149,22 +204,36 @@ const RegisterPetScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.titleContainer}>
-          <Text style={styles.mainTitle}>Registro de Mascota</Text>
-          <Text style={styles.subtitle}>
-            Completa la ficha técnica para el hospedaje
-          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Image
+              source={IconoVolver}
+              style={styles.backIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.mainTitle}>
+              {isEditing ? "Editar Mascota" : "Registro de Mascota"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isEditing
+                ? "Actualiza los datos de tu mascota"
+                : "Completa los datos de tu mascota"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
-          {/* SECCIÓN: INFORMACIÓN BÁSICA */}
           <Text style={styles.sectionTitle}>Información Básica</Text>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Nombre de la mascota</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: Max"
-              placeholderTextColor="#9CA3AF"
+              value={formData.nombre}
+              placeholder="Nombre de la mascota"
+              placeholderTextColor="rgba(10, 10, 10, 0.50)"
               onChangeText={(v) => handleInputChange("nombre", v)}
             />
           </View>
@@ -173,8 +242,9 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Tipo</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: Perro, Gato..."
-              placeholderTextColor="#9CA3AF"
+              value={formData.tipo}
+              placeholder="Perro, Gato, etc."
+              placeholderTextColor="rgba(10, 10, 10, 0.50)"
               onChangeText={(v) => handleInputChange("tipo", v)}
             />
           </View>
@@ -183,8 +253,9 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Raza</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: Beagle, Siamés..."
-              placeholderTextColor="#9CA3AF"
+              value={formData.raza}
+              placeholder="Raza de la mascota"
+              placeholderTextColor="rgba(10, 10, 10, 0.50)"
               onChangeText={(v) => handleInputChange("raza", v)}
             />
           </View>
@@ -193,9 +264,10 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Edad</Text>
             <TextInput
               style={styles.input}
-              placeholder="Años"
+              value={formData.edad.toString()}
+              placeholder="Edad de la mascota"
               keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="rgba(10, 10, 10, 0.50)"
               onChangeText={(v) => handleInputChange("edad", v)}
             />
           </View>
@@ -204,8 +276,8 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Tamaño</Text>
             <TextInput
               style={styles.input}
+              value={formData.tamano}
               placeholder="Pequeño, Mediano, Grande"
-              placeholderTextColor="#9CA3AF"
               onChangeText={(v) => handleInputChange("tamano", v)}
             />
           </View>
@@ -240,25 +312,38 @@ const RegisterPetScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Sexo</Text>
             <View style={styles.selectorRow}>
-              {["Masculino", "Femenino"].map((opt) => (
-                <TouchableOpacity
-                  key={opt}
+              <TouchableOpacity
+                style={[
+                  styles.selectorBtn,
+                  formData.sexo === "Masculino" && styles.selectorBtnActive,
+                ]}
+                onPress={() => handleInputChange("sexo", "Masculino")}
+              >
+                <Text
                   style={[
-                    styles.selectorBtn,
-                    formData.sexo === opt && styles.selectorBtnActive,
+                    styles.selectorText,
+                    formData.sexo === "Masculino" && styles.selectorTextActive,
                   ]}
-                  onPress={() => handleInputChange("sexo", opt)}
                 >
-                  <Text
-                    style={[
-                      styles.selectorText,
-                      formData.sexo === opt && styles.selectorTextActive,
-                    ]}
-                  >
-                    {opt}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                  Macho
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.selectorBtn,
+                  formData.sexo === "Femenino" && styles.selectorBtnActive,
+                ]}
+                onPress={() => handleInputChange("sexo", "Femenino")}
+              >
+                <Text
+                  style={[
+                    styles.selectorText,
+                    formData.sexo === "Femenino" && styles.selectorTextActive,
+                  ]}
+                >
+                  Hembra
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -287,7 +372,7 @@ const RegisterPetScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.selectorBtn,
-                  formData.vacunado === false && styles.selectorBtnActiveRed,
+                  formData.vacunado === false && styles.selectorBtnActive,
                 ]}
                 onPress={() => handleInputChange("vacunado", false)}
               >
@@ -351,6 +436,7 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Nombre</Text>
             <TextInput
               style={styles.input}
+              value={formData.vetNombre}
               placeholder="Dr. / Clínica"
               placeholderTextColor="#9CA3AF"
               onChangeText={(v) => handleInputChange("vetNombre", v)}
@@ -360,6 +446,7 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Teléfono</Text>
             <TextInput
               style={styles.input}
+              value={formData.vetTelefono}
               placeholder="8888-8888"
               keyboardType="phone-pad"
               placeholderTextColor="#9CA3AF"
@@ -373,6 +460,7 @@ const RegisterPetScreen = () => {
             <Text style={styles.label}>Alimentación y notas</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
+              value={formData.cuidados}
               multiline
               placeholder="Ej: Solo come alimento seco, 2 veces al día..."
               placeholderTextColor="#9CA3AF"
@@ -382,13 +470,12 @@ const RegisterPetScreen = () => {
 
           <View style={styles.buttonSection}>
             <CustomButton
-              title="Registrar Mascota"
+              title={isEditing ? "Guardar Cambios" : "Registrar Mascota"}
               type="primary"
               onPress={handleSave}
             />
-            <View style={{ height: 12 }} />
             <CustomButton
-              title="Regresar"
+              title="Cancelar"
               type="danger"
               onPress={() => router.back()}
             />
@@ -439,7 +526,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 30,
-    paddingBottom: 100,
   },
   titleContainer: { marginBottom: 24 },
   mainTitle: {
@@ -570,6 +656,15 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     marginBottom: 12, // Espaciado con el texto inferior
+  },
+  backButton: {
+    marginRight: 12, // Espacio entre la flecha y el logo
+    padding: 4, // Área de toque más amplia
+  },
+  backIcon: {
+    width: 24,
+    height: 24,
+    tintColor: "#101828", // Color oscuro para que combine con el título
   },
 });
 

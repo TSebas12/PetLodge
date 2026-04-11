@@ -34,7 +34,8 @@ const HomeScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  const API_URL = "http://192.168.1.40:3000";
+  //const API_URL = "http://192.168.1.40:3000";
+  const API_URL = "http://localhost:3000";
 
   useEffect(() => {
     setIsMounted(true);

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DoubleBtnModal from "../components/modals/DoubleBtnModal";
 
 // Componentes del proyecto
 import CustomButtonIcon from "../components/CustomButtonIcon";
@@ -22,12 +23,15 @@ import PetCard from "../components/MyPetCard";
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
 const IconoMas = require("../../assets/IconoPlus.webp");
+const IconoAlerta = require("../../assets/IconoAlerta.webp");
 
 const MyPetsScreen = () => {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [myPets, setMyPets] = useState([]); // Estado dinámico para mascotas
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -88,9 +92,32 @@ const MyPetsScreen = () => {
     }
   };
 
-  const handleDeletePet = (id: string) => {
-    console.log("Eliminando mascota con ID:", id);
-    // Aquí irá luego el axios.delete
+  const handleDeleteConfirm = async () => {
+    if (!selectedPetId) return;
+
+    try {
+      const API_URL =
+        Platform.OS === "android"
+          ? "http://10.0.2.2:3000"
+          : "http://localhost:3000";
+
+      const response = await axios.delete(
+        `${API_URL}/api/pets/${selectedPetId}`,
+      );
+
+      if (response.status === 200) {
+        // Actualizamos la lista local eliminando la mascota borrada
+        setMyPets((prev) =>
+          prev.filter((pet: any) => pet._id !== selectedPetId),
+        );
+        setDeleteModalVisible(false);
+        setSelectedPetId(null);
+      }
+    } catch (error) {
+      console.error("Error al eliminar mascota:", error);
+      alert("No se pudo eliminar la mascota. Inténtalo de nuevo.");
+      setDeleteModalVisible(false);
+    }
   };
 
   return (
@@ -136,13 +163,22 @@ const MyPetsScreen = () => {
           ) : myPets.length > 0 ? (
             myPets.map((pet: any) => (
               <PetCard
-                key={pet._id} // Usamos _id de MongoDB
+                key={pet._id}
+                imageUri={pet.foto}
                 name={pet.nombre}
                 breed={pet.raza}
                 type={pet.tipo}
-                status={pet.estado || "Activo"}
-                onEdit={() => router.push(`./EditPetScreen?id=${pet._id}`)}
-                onDelete={() => handleDeletePet(pet._id)}
+                status=""
+                onEdit={() => {
+                  router.push({
+                    pathname: "/registerPet",
+                    params: { id: pet._id },
+                  });
+                }}
+                onDelete={() => {
+                  setSelectedPetId(pet._id);
+                  setDeleteModalVisible(true);
+                }}
               />
             ))
           ) : (
@@ -152,6 +188,14 @@ const MyPetsScreen = () => {
           )}
         </View>
       </ScrollView>
+      <DoubleBtnModal
+        visible={deleteModalVisible}
+        icon={IconoAlerta}
+        title="¿Eliminar mascota?"
+        subtitle="Esta acción no se puede deshacer. Los datos de tu mascota se borrarán permanentemente."
+        onClose={() => setDeleteModalVisible(false)} // Si cancela, solo cerramos
+        onConfirm={handleDeleteConfirm} // Si confirma, borramos en la BD
+      />
       <Footer />
     </SafeAreaView>
   );
