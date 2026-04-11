@@ -2,7 +2,15 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Componentes del proyecto
@@ -87,8 +95,21 @@ const MyPetsScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header Fijo */}
-      {/* ... */}
+      {/* Header Fijo Superior */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
+          <Text style={styles.headerTitle}>PetLodge</Text>
+        </View>
+
+        <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
+          <Image
+            source={LogoutIcon}
+            style={styles.logoutIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -104,7 +125,7 @@ const MyPetsScreen = () => {
             title="Añadir Mascota"
             icon={IconoMas}
             type="primary"
-            onPress={() => router.push("/RegisterPetScreen")}
+            onPress={() => router.push("/registerPet")}
           />
         </View>
 
@@ -120,7 +141,7 @@ const MyPetsScreen = () => {
                 breed={pet.raza}
                 type={pet.tipo}
                 status={pet.estado || "Activo"}
-                onEdit={() => router.push(`/EditPetScreen?id=${pet._id}`)}
+                onEdit={() => router.push(`./EditPetScreen?id=${pet._id}`)}
                 onDelete={() => handleDeletePet(pet._id)}
               />
             ))
