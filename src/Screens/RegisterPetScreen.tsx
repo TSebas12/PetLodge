@@ -44,7 +44,7 @@ const RegisterPetScreen = () => {
   });
 
   // Estado del formulario
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     nombre: "",
     tipo: "",
     raza: "",
@@ -52,17 +52,21 @@ const RegisterPetScreen = () => {
     sexo: "",
     tamano: "",
     foto: "sample_url.jpg",
-    vacunado: null as boolean | null,
-    condicionesMedicas: null as boolean | null,
+    vacunado: null,
+    condicionesMedicas: null,
     vetNombre: "",
     vetTelefono: "",
     cuidados: "",
-  });
+  };
 
-  // EFECTO: Si es edición, cargar los datos actuales de la mascota
+  const [formData, setFormData] = useState(initialFormState);
+
   useEffect(() => {
     if (isEditing) {
       loadPetData();
+    } else {
+      // Si entramos a registrar (no hay ID), reseteamos al estado inicial
+      setFormData(initialFormState);
     }
   }, [id]);
 
@@ -73,38 +77,22 @@ const RegisterPetScreen = () => {
         Platform.OS === "android"
           ? "http://10.0.2.2:3000"
           : "http://localhost:3000";
+      const petId = Array.isArray(id) ? id[0] : id;
+      const response = await axios.get(`${API_URL}/api/pets/${petId}`);
 
-      // Aseguramos que el id sea válido
-      if (!id) return;
-
-      console.log("Solicitando datos para mascota ID:", id);
-      const response = await axios.get(`${API_URL}/api/pets/${id}`);
-
-      if (response.status === 200 && response.data) {
-        console.log("Datos recibidos:", response.data);
+      if (response.status === 200) {
+        const data = response.data;
         setFormData({
-          nombre: response.data.nombre || "",
-          tipo: response.data.tipo || "",
-          raza: response.data.raza || "",
-          edad: response.data.edad ? response.data.edad.toString() : "",
-          sexo: response.data.sexo || "",
-          tamano: response.data.tamano || "",
-          foto: response.data.foto || "sample_url.jpg",
-          vacunado: response.data.vacunado ?? null,
-          condicionesMedicas: response.data.condicionesMedicas ?? null,
-          vetNombre: response.data.vetNombre || "",
-          vetTelefono: response.data.vetTelefono || "",
-          cuidados: response.data.cuidados || "",
+          ...data,
+          edad: data.edad ? data.edad.toString() : "",
+          tamano: data.tamano || "",
+          vetNombre: data.vetNombre || "",
+          vetTelefono: data.vetTelefono || "",
+          cuidados: data.cuidados || "",
         });
       }
     } catch (error) {
-      console.error("Error cargando datos de mascota:", error);
-      setModalConfig({
-        title: "Error",
-        msg: "No se pudieron cargar los datos de la mascota.",
-        icon: IconoAlerta,
-      });
-      setModalVisible(true);
+      console.error("Error cargando datos:", error);
     } finally {
       setLoading(false);
     }
@@ -127,10 +115,15 @@ const RegisterPetScreen = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.nombre || !formData.tipo) {
+    // --- SOLUCIÓN: VALIDACIÓN DE CAMPOS ---
+    if (
+      !formData.nombre.trim() ||
+      !formData.tipo.trim() ||
+      !formData.raza.trim()
+    ) {
       setModalConfig({
-        title: "Atención",
-        msg: "Por favor completa los campos obligatorios.",
+        title: "Faltan datos",
+        msg: "Por favor, completa los campos obligatorios: Nombre, Tipo y Raza.",
         icon: IconoAlerta,
       });
       setModalVisible(true);
@@ -143,18 +136,17 @@ const RegisterPetScreen = () => {
         Platform.OS === "android"
           ? "http://10.0.2.2:3000"
           : "http://localhost:3000";
+      const petId = Array.isArray(id) ? id[0] : id;
 
       let response;
       if (isEditing) {
-        // MODO EDICIÓN: PUT
-        response = await axios.put(`${API_URL}/api/pets/${id}`, formData);
+        response = await axios.put(`${API_URL}/api/pets/${petId}`, formData);
       } else {
-        // MODO REGISTRO: POST
-        let session =
+        const sessionStr =
           Platform.OS === "web"
             ? localStorage.getItem("userSession")
             : await SecureStore.getItemAsync("userSession");
-        const user = JSON.parse(session || "{}");
+        const user = JSON.parse(sessionStr || "{}");
         response = await axios.post(`${API_URL}/api/pets`, {
           ...formData,
           ownerId: user._id,
@@ -163,17 +155,13 @@ const RegisterPetScreen = () => {
 
       if (response.status === 200 || response.status === 201) {
         setModalConfig({
-          title: "¡Éxito!",
+          title: isEditing ? "¡Actualizado!" : "¡Registrado!",
           msg: isEditing
-            ? "Información actualizada correctamente."
-            : "Mascota registrada correctamente.",
+            ? "Los cambios se guardaron correctamente."
+            : "Mascota registrada con éxito.",
           icon: IconoCheck,
         });
         setModalVisible(true);
-        setTimeout(() => {
-          setModalVisible(false);
-          router.push("/pets");
-        }, 1500);
       }
     } catch (error) {
       setModalConfig({
