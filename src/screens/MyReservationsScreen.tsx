@@ -21,8 +21,8 @@ import API_BASE_URL from "../config/api";
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
 const PlusIcon = require("../../assets/IconoPlus.webp");
-const EyeIcon = require("../../assets/IconoCheck.webp");
-const XIcon = require("../../assets/IconoX.webp");
+const EyeIcon = require("../../assets/IconoOjo.webp");
+const XIcon = require("../../assets/IconoEquis.webp");
 
 const API_URL = API_BASE_URL;
 

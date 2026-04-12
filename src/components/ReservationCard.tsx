@@ -1,53 +1,92 @@
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import API_BASE_URL from "../config/api";
 import CustomButtonIcon from "./CustomButtonIcon";
 import ReservationItem from "./ReservationItem";
 
 const PlusIcon = require("../../assets/IconoPlus.webp");
 
-const ActiveReservationsCard = () => {
-  const reservations = [
-    {
-      id: 1,
-      petName: "Max",
-      dates: "Ingreso: 12/07/2024 - Salida: 17/07/2024",
-      details: "Habitación 101 • Tipo: Estándar",
-      status: "Confirmada" as const,
-    },
-    {
-      id: 2,
-      petName: "Luna",
-      dates: "Ingreso: 20/07/2024 - Salida: 22/07/2024",
-      details: "Habitación 203 • Tipo: Especial",
-      status: "Pendiente" as const,
-    },
-  ];
+interface ActiveReservationsCardProps {
+  ownerId: string | undefined;
+}
+
+const ActiveReservationsCard = ({ ownerId }: ActiveReservationsCardProps) => {
+  const router = useRouter();
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchReservations = useCallback(async () => {
+    if (!ownerId) return;
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/reservations/user/${ownerId}`,
+      );
+      // Tomamos solo las 2 más recientes para el Home
+      setReservations(response.data.slice(0, 3));
+    } catch (error) {
+      console.error("Error al obtener reservas:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [ownerId]);
+
+  useEffect(() => {
+    fetchReservations();
+  }, [fetchReservations]);
 
   return (
     <View style={styles.mainCard}>
       <View style={styles.header}>
-        <Text style={styles.title}>Mis Reservas Activas</Text>
-        <TouchableOpacity activeOpacity={0.7}>
+        <Text style={styles.title}>Mis Reservas Recientes</Text>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push("/bookings")}
+        >
           <Text style={styles.seeAll}>Ver Todas</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.listContainer}>
-        {reservations.map((res) => (
-          <ReservationItem
-            key={res.id}
-            petName={res.petName}
-            dates={res.dates}
-            details={res.details}
-            status={res.status}
-          />
-        ))}
+        {loading ? (
+          <ActivityIndicator color="#00A63E" style={{ marginVertical: 20 }} />
+        ) : reservations.length > 0 ? (
+          reservations.map((res: any) => (
+            <ReservationItem
+              key={res._id}
+              petName={res.petName}
+              // Formateamos las fechas para que se vean bien
+              dates={`Ingreso: ${new Date(
+                res.fechaIngreso,
+              ).toLocaleDateString()} - Salida: ${new Date(
+                res.fechaSalida,
+              ).toLocaleDateString()}`}
+              details={`Habitación ${res.numeroHabitacion} • Tipo: ${res.tipoHospedaje}`}
+              // Mapeamos el estado del backend al formato del componente
+              status={
+                res.estado === "activa" || res.estado === "confirmada"
+                  ? "Confirmada"
+                  : "Pendiente"
+              }
+            />
+          ))
+        ) : (
+          <Text style={styles.noData}>No tienes reservas registradas.</Text>
+        )}
       </View>
 
       <View style={styles.buttonWrapper}>
         <CustomButtonIcon
           title="Nueva Reserva"
-          onPress={() => console.log("Crear reserva")}
+          onPress={() => router.push("/newReservation")}
           icon={PlusIcon}
           type="secondary"
         />
@@ -91,6 +130,12 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     marginTop: 10,
+  },
+  noData: {
+    textAlign: "center",
+    color: "#667085",
+    marginVertical: 10,
+    fontSize: 14,
   },
 });
 

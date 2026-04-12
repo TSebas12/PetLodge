@@ -9,9 +9,11 @@ import {
   View,
 } from "react-native";
 import CustomButtonIcon from "../components/CustomButtonIcon";
+import API_BASE_URL from "../config/api";
 import PetItem from "./PetItem";
 
 const AddIcon = require("../../assets/IconoPlus.webp");
+const API_URL = API_BASE_URL;
 
 interface MyPetsCardProps {
   ownerId: string | undefined;
@@ -28,10 +30,7 @@ const MyPetsCard = ({ ownerId }: MyPetsCardProps) => {
     try {
       setLoading(true);
       // Usamos la IP de tu servidor que pusiste en los otros archivos
-      const response = await axios.get(
-        `http://192.168.1.40:3000/api/pets/user/${ownerId}`,
-      );
-      // Solo mostramos las primeras 3 para el "Acceso Rápido"
+      const response = await axios.get(`${API_URL}/api/pets/user/${ownerId}`);
       setPets(response.data.slice(0, 3));
     } catch (error) {
       console.error("Error al obtener mascotas:", error);
@@ -51,7 +50,7 @@ const MyPetsCard = ({ ownerId }: MyPetsCardProps) => {
         <Text style={styles.title}>Mis Mascotas Registradas</Text>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push("/pets")} // Asumiendo que tienes esta ruta
+          onPress={() => router.push("/pets")}
         >
           <Text style={styles.seeAll}>Ver Todas</Text>
         </TouchableOpacity>
@@ -85,7 +84,7 @@ const MyPetsCard = ({ ownerId }: MyPetsCardProps) => {
       <View style={styles.buttonWrapper}>
         <CustomButtonIcon
           title="Añadir Mascota"
-          onPress={() => console.log("Añadir Mascota")} // Ajusta a tu ruta real
+          onPress={() => router.push("/registerPet")}
           icon={AddIcon}
           type="primary"
         />

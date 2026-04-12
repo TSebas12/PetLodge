@@ -32,33 +32,52 @@ const HomeScreen = () => {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
   const [petsCount, setPetsCount] = useState<number>(0);
+  const [activeResCount, setActiveResCount] = useState<number>(0);
+  const [pendingResCount, setPendingResCount] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  //const API_URL = "http://192.168.1.40:3000";
   const API_URL = API_BASE_URL;
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Función para obtener la cantidad de mascotas desde el servidor
-  const fetchPetsData = async (userId: string) => {
+  // Función unificada para traer estadísticas del Home
+  const fetchHomeData = async (userId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/api/pets/user/${userId}`);
-      if (Array.isArray(response.data)) {
-        setPetsCount(response.data.length);
+      // 1. Obtener Mascotas
+      const petsResponse = await axios.get(
+        `${API_URL}/api/pets/user/${userId}`,
+      );
+      if (Array.isArray(petsResponse.data)) {
+        setPetsCount(petsResponse.data.length);
+      }
+
+      // 2. Obtener Reservas
+      const resResponse = await axios.get(
+        `${API_URL}/api/reservations/user/${userId}`,
+      );
+      if (Array.isArray(resResponse.data)) {
+        // Contamos según el estado que viene del backend
+        const activas = resResponse.data.filter(
+          (r: any) => r.estado === "activa",
+        ).length;
+        const pendientes = resResponse.data.filter(
+          (r: any) => r.estado === "pendiente",
+        ).length;
+
+        setActiveResCount(activas);
+        setPendingResCount(pendientes);
       }
     } catch (error) {
-      console.error("Error al obtener estadísticas de mascotas:", error);
+      console.error("Error cargando datos del Home:", error);
     }
   };
 
-  // Función para cargar sesión y disparar peticiones
   const getUserData = useCallback(async () => {
     try {
       let session = null;
-
       if (Platform.OS === "web") {
         session = localStorage.getItem("userSession");
       } else {
@@ -68,9 +87,7 @@ const HomeScreen = () => {
       if (session) {
         const parsed = JSON.parse(session);
         setUserData(parsed);
-
-        // Una vez tenemos el ID del usuario, traemos el conteo real
-        await fetchPetsData(parsed._id);
+        await fetchHomeData(parsed._id);
       } else {
         if (isMounted) router.replace("/");
       }
@@ -94,7 +111,6 @@ const HomeScreen = () => {
       else await SecureStore.deleteItemAsync("userSession");
       router.replace("/");
     } catch (error) {
-      console.error("Error al borrar sesión:", error);
       router.replace("/");
     }
   };
@@ -122,11 +138,9 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Contenido con Scroll */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        style={styles.scrollView}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -138,14 +152,14 @@ const HomeScreen = () => {
         {/* Bienvenida */}
         <View style={styles.titleContainer}>
           <Text style={styles.mainTitle}>
-            ¡Hola, {userData?.fullName?.split(" ")[0] || "Bienvenido"}!
+            ¡Hola, {userData?.fullName?.split(" ")[0] || "Usuario"}!
           </Text>
           <Text style={styles.subtitle}>
-            Gestiona tus mascotas y reservas activas
+            Gestiona tus mascotas y reservas reales
           </Text>
         </View>
 
-        {/* Sección de Estadísticas Dinámicas */}
+        {/* Stats Dinámicos */}
         <View style={styles.statsContainer}>
           <StatCard
             label="Mascotas Registradas"
@@ -154,42 +168,37 @@ const HomeScreen = () => {
             iconBackgroundColor="#DCFCE7"
             iconTintColor="#15803D"
           />
-
           <View style={{ height: 16 }} />
-
           <StatCard
             label="Reservas Activas"
-            value="1"
+            value={activeResCount.toString()}
             icon={CalendarBlue}
             iconBackgroundColor="#DBEAFE"
             iconTintColor="#1D4ED8"
           />
-
           <View style={{ height: 16 }} />
-
           <StatCard
-            label="Próximas Reservas"
-            value="1"
+            label="Reservas Pendientes"
+            value={pendingResCount.toString()}
             icon={CalendarOrange}
             iconBackgroundColor="#FEF9C2"
             iconTintColor="#A16207"
           />
         </View>
 
-        {/* Sección de Mis Mascotas */}
+        {/* Sección Mascotas (Muestra máx 3) */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Acceso Rápido a Mascotas</Text>
           <MyPetsCard ownerId={userData?._id} />
         </View>
 
-        {/* Reservas Activas */}
+        {/* Sección Reservas (Muestra máx 3) */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Reservas Recientes</Text>
-          <ActiveReservationsCard />
+          <ActiveReservationsCard ownerId={userData?._id} />
         </View>
       </ScrollView>
 
-      {/* Footer Fijo */}
       <Footer />
     </SafeAreaView>
   );
