@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import API_BASE_URL from "../config/api";
 
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
@@ -51,7 +52,7 @@ const LoginScreen = () => {
 
     try {
       // AJUSTE DE URL: Si es Web usa localhost, si es móvil usa la IP
-      const API_URL = "http://localhost:3000/api/users/login";
+      const API_URL = `${API_BASE_URL}/api/users/login`;
 
       const response = await fetch(API_URL, {
         method: "POST",

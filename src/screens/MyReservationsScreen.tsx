@@ -14,17 +14,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import CustomButtonIcon from "../components/CustomButtonIcon";
 import Footer from "../components/Footer";
+import API_BASE_URL from "../config/api";
 
-const Logo       = require("../../assets/LogoPetLodge.webp");
+const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
-const PlusIcon   = require("../../assets/IconoPlus.webp");
-const EyeIcon    = require("../../assets/IconoCheck.webp");
-const XIcon      = require("../../assets/IconoX.webp");
+const PlusIcon = require("../../assets/IconoPlus.webp");
+const EyeIcon = require("../../assets/IconoCheck.webp");
+const XIcon = require("../../assets/IconoX.webp");
 
-const API_URL = "http://localhost:3000";
+const API_URL = API_BASE_URL;
 
 // ── Tipos ─────────────────────────────────────────────────────
 type EstadoReserva = "pendiente" | "activa" | "finalizada" | "cancelada";
@@ -50,23 +50,23 @@ const formatDate = (iso: string) =>
   });
 
 const ESTADO_LABEL: Record<EstadoReserva, string> = {
-  pendiente:  "Pendiente",
-  activa:     "Activa",
+  pendiente: "Pendiente",
+  activa: "Activa",
   finalizada: "Finalizada",
-  cancelada:  "Cancelada",
+  cancelada: "Cancelada",
 };
 
 const ESTADO_COLORS: Record<EstadoReserva, { bg: string; text: string }> = {
-  pendiente:  { bg: "#FEF9C2", text: "#A65F00" },
-  activa:     { bg: "#DCFCE7", text: "#008236" },
+  pendiente: { bg: "#FEF9C2", text: "#A65F00" },
+  activa: { bg: "#DCFCE7", text: "#008236" },
   finalizada: { bg: "#E5E7EB", text: "#374151" },
-  cancelada:  { bg: "#FEE2E2", text: "#B91C1C" },
+  cancelada: { bg: "#FEE2E2", text: "#B91C1C" },
 };
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "todas",       label: "Todas"       },
-  { key: "activas",     label: "Activas"     },
-  { key: "pendientes",  label: "Pendientes"  },
+  { key: "todas", label: "Todas" },
+  { key: "activas", label: "Activas" },
+  { key: "pendientes", label: "Pendientes" },
   { key: "finalizadas", label: "Finalizadas" },
 ];
 
@@ -79,7 +79,7 @@ const ReservationCard = ({
   onCancel: (id: string) => void;
 }) => {
   const router = useRouter();
-  const colors  = ESTADO_COLORS[reservation.estado];
+  const colors = ESTADO_COLORS[reservation.estado];
   const canCancel =
     reservation.estado === "pendiente" || reservation.estado === "activa";
 
@@ -181,15 +181,15 @@ const cardStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  reservaId:  { color: "#101828", fontSize: 16, fontWeight: "700" },
+  reservaId: { color: "#101828", fontSize: 16, fontWeight: "700" },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText:  { fontSize: 12, fontWeight: "600" },
-  petName:    { color: "#4A5565", fontSize: 14 },
-  row:        { flexDirection: "row", gap: 16 },
-  col:        { flex: 1, gap: 2 },
+  badgeText: { fontSize: 12, fontWeight: "600" },
+  petName: { color: "#4A5565", fontSize: 14 },
+  row: { flexDirection: "row", gap: 16 },
+  col: { flex: 1, gap: 2 },
   fieldLabel: { color: "#6A7282", fontSize: 12, fontWeight: "400" },
   fieldValue: { color: "#101828", fontSize: 14, fontWeight: "600" },
-  buttons:    { marginTop: 4 },
+  buttons: { marginTop: 4 },
 });
 
 // ── Pantalla ──────────────────────────────────────────────────
@@ -197,12 +197,14 @@ const MyReservationsScreen = () => {
   const router = useRouter();
 
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [refreshing,   setRefreshing]   = useState(false);
-  const [activeTab,    setActiveTab]    = useState<TabKey>("todas");
-  const [isMounted,    setIsMounted]    = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("todas");
+  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const loadReservations = useCallback(async () => {
     try {
@@ -220,7 +222,7 @@ const MyReservationsScreen = () => {
 
       const parsed = JSON.parse(session);
       const res = await axios.get(
-        `${API_URL}/api/reservations/user/${parsed._id}`
+        `${API_URL}/api/reservations/user/${parsed._id}`,
       );
       setReservations(res.data);
     } catch (err) {
@@ -249,13 +251,15 @@ const MyReservationsScreen = () => {
       if (Platform.OS === "web") localStorage.removeItem("userSession");
       else await SecureStore.deleteItemAsync("userSession");
       router.replace("/");
-    } catch { router.replace("/"); }
+    } catch {
+      router.replace("/");
+    }
   };
 
   const filtered = reservations.filter((r) => {
-    if (activeTab === "todas")       return true;
-    if (activeTab === "activas")     return r.estado === "activa";
-    if (activeTab === "pendientes")  return r.estado === "pendiente";
+    if (activeTab === "todas") return true;
+    if (activeTab === "activas") return r.estado === "activa";
+    if (activeTab === "pendientes") return r.estado === "pendiente";
     if (activeTab === "finalizadas")
       return r.estado === "finalizada" || r.estado === "cancelada";
     return true;
@@ -285,7 +289,10 @@ const MyReservationsScreen = () => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); loadReservations(); }}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadReservations();
+            }}
             colors={["#00A63E"]}
           />
         }
@@ -377,20 +384,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  headerLeft:  { flexDirection: "row", alignItems: "center" },
-  headerLogo:  { width: 32, height: 32 },
-  headerTitle: { color: "#101828", fontSize: 20, fontWeight: "700", marginLeft: 8 },
-  logoutIcon:  { width: 20, height: 20, tintColor: "#4A5565" },
+  headerLeft: { flexDirection: "row", alignItems: "center" },
+  headerLogo: { width: 32, height: 32 },
+  headerTitle: {
+    color: "#101828",
+    fontSize: 20,
+    fontWeight: "700",
+    marginLeft: 8,
+  },
+  logoutIcon: { width: 20, height: 20, tintColor: "#4A5565" },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 24,
   },
-  titleBlock:    { marginBottom: 20 },
-  mainTitle:     { color: "#101828", fontSize: 28, fontWeight: "700", lineHeight: 34 },
-  subtitle:      { color: "#4A5565", fontSize: 14, marginTop: 4 },
+  titleBlock: { marginBottom: 20 },
+  mainTitle: {
+    color: "#101828",
+    fontSize: 28,
+    fontWeight: "700",
+    lineHeight: 34,
+  },
+  subtitle: { color: "#4A5565", fontSize: 14, marginTop: 4 },
   newBtnWrapper: { marginBottom: 20 },
-  tabsScroll:    { marginBottom: 20 },
+  tabsScroll: { marginBottom: 20 },
   tabsContainer: { flexDirection: "row", gap: 8 },
   tab: {
     paddingHorizontal: 16,
@@ -398,8 +415,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#F3F4F6",
   },
-  tabActive:     { backgroundColor: "#00A63E" },
-  tabText:       { color: "#4A5565", fontSize: 13, fontWeight: "500" },
+  tabActive: { backgroundColor: "#00A63E" },
+  tabText: { color: "#4A5565", fontSize: 13, fontWeight: "500" },
   tabTextActive: { color: "white", fontWeight: "700" },
   emptyContainer: {
     alignItems: "center",

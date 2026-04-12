@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DoubleBtnModal from "../components/modals/DoubleBtnModal";
+import API_BASE_URL from "../config/api";
 
 // Componentes del proyecto
 import CustomButtonIcon from "../components/CustomButtonIcon";
@@ -52,10 +53,7 @@ const MyPetsScreen = () => {
         const userId = parsed._id; // Obtenemos el ID del dueño de la sesión
 
         // Configuración de URL según plataforma [cite: 5]
-        const API_URL =
-          Platform.OS === "android"
-            ? "http://192.168.1.40:3000"
-            : "http://localhost:3000";
+        const API_URL = API_BASE_URL;
 
         // Petición al backend (Asegúrate de tener este endpoint: GET /api/pets/user/:id)
         const response = await axios.get(`${API_URL}/api/pets/user/${userId}`);
@@ -96,10 +94,7 @@ const MyPetsScreen = () => {
     if (!selectedPetId) return;
 
     try {
-      const API_URL =
-        Platform.OS === "android"
-          ? "http://10.0.2.2:3000"
-          : "http://localhost:3000";
+      const API_URL = API_BASE_URL;
 
       const response = await axios.delete(
         `${API_URL}/api/pets/${selectedPetId}`,

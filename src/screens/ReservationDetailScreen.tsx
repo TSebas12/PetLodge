@@ -11,10 +11,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import API_BASE_URL from "../config/api";
 
 const BackIcon = require("../../assets/IconoVolver.webp");
 
-const API_URL = "http://localhost:3000";
+const API_URL = API_BASE_URL;
 
 // ── Tipos ─────────────────────────────────────────────────────
 type EstadoReserva = "pendiente" | "activa" | "finalizada" | "cancelada";
@@ -45,17 +46,17 @@ const formatDate = (iso: string) =>
   });
 
 const ESTADO_LABEL: Record<EstadoReserva, string> = {
-  pendiente:  "Pendiente",
-  activa:     "Activa",
+  pendiente: "Pendiente",
+  activa: "Activa",
   finalizada: "Completada",
-  cancelada:  "Cancelada",
+  cancelada: "Cancelada",
 };
 
 const ESTADO_COLORS: Record<EstadoReserva, { bg: string; text: string }> = {
-  pendiente:  { bg: "#FEF9C2", text: "#A65F00" },
-  activa:     { bg: "#DCFCE7", text: "#008236" },
+  pendiente: { bg: "#FEF9C2", text: "#A65F00" },
+  activa: { bg: "#DCFCE7", text: "#008236" },
   finalizada: { bg: "#E5E7EB", text: "#374151" },
-  cancelada:  { bg: "#FEE2E2", text: "#B91C1C" },
+  cancelada: { bg: "#FEE2E2", text: "#B91C1C" },
 };
 
 // ── Fila de detalle ───────────────────────────────────────────
@@ -83,13 +84,16 @@ const ReservationDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [reservation, setReservation] = useState<Reservation | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        if (!id) { setError("ID de reserva no encontrado."); return; }
+        if (!id) {
+          setError("ID de reserva no encontrado.");
+          return;
+        }
         const res = await axios.get(`${API_URL}/api/reservations/${id}`);
         setReservation(res.data);
       } catch {
@@ -107,8 +111,8 @@ const ReservationDetailScreen = () => {
     const s = r.serviciosAdicionales;
     if (!s) return "Ninguno";
     const activos: string[] = [];
-    if (s.bano)                 activos.push("Baño");
-    if (s.paseo)                activos.push("Paseo");
+    if (s.bano) activos.push("Baño");
+    if (s.paseo) activos.push("Paseo");
     if (s.alimentacionEspecial) activos.push("Alimentación Especial");
     return activos.length ? activos.join(", ") : "Ninguno";
   };
@@ -118,7 +122,11 @@ const ReservationDetailScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Image source={BackIcon} style={styles.backIcon} resizeMode="contain" />
+          <Image
+            source={BackIcon}
+            style={styles.backIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Historial de Reservas</Text>
         <View style={{ width: 24 }} />
@@ -223,8 +231,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
   },
-  backIcon:       { width: 24, height: 24, tintColor: "#101828" },
-  headerTitle:    { color: "#101828", fontSize: 18, fontWeight: "700" },
+  backIcon: { width: 24, height: 24, tintColor: "#101828" },
+  headerTitle: { color: "#101828", fontSize: 18, fontWeight: "700" },
   headerSubtitle: {
     color: "#4A5565",
     fontSize: 13,
@@ -237,7 +245,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
-  errorBox:  {
+  errorBox: {
     margin: 24,
     padding: 16,
     backgroundColor: "#FEE2E2",
@@ -262,10 +270,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  reservaId:   { color: "#101828", fontSize: 17, fontWeight: "700" },
-  badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText:   { fontSize: 12, fontWeight: "600" },
-  petName:     { color: "#4A5565", fontSize: 14 },
+  reservaId: { color: "#101828", fontSize: 17, fontWeight: "700" },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeText: { fontSize: 12, fontWeight: "600" },
+  petName: { color: "#4A5565", fontSize: 14 },
   detailsBlock: {},
 });
 

@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import API_BASE_URL from "../config/api";
 // Componentes
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
@@ -167,7 +167,7 @@ const EditProfileScreen = () => {
     const startTime = Date.now();
 
     try {
-      const API_URL = "http://192.168.1.40:3000";
+      const API_URL = API_BASE_URL;
 
       const response = await fetch(`${API_URL}/api/users/${userData._id}`, {
         method: "PUT",

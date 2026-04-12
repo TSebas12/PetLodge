@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import API_BASE_URL from "../config/api";
 
 // Componentes
 import Footer from "../components/Footer";
@@ -35,7 +36,7 @@ const HomeScreen = () => {
   const [isMounted, setIsMounted] = useState(false);
 
   //const API_URL = "http://192.168.1.40:3000";
-  const API_URL = "http://localhost:3000";
+  const API_URL = API_BASE_URL;
 
   useEffect(() => {
     setIsMounted(true);

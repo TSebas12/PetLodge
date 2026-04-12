@@ -15,7 +15,7 @@ import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import LoadingModal from "../components/modals/LoadingModal";
 import SingleBtnModal from "../components/modals/SingleBtnModal";
-
+import API_BASE_URL from "../config/api";
 const Logo = require("../../assets/LogoPetLodge.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
 const IdIcon = require("../../assets/IconoTarjeta.webp");
@@ -110,7 +110,7 @@ const RegisterScreen = () => {
     const delay = new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
-      const API_URL = "http://192.168.1.40:3000/api/users/register";
+      const API_URL = API_BASE_URL;
       const [response] = await Promise.all([
         axios.post(API_URL, {
           fullName,

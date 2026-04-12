@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import API_BASE_URL from "../config/api";
 // Componentes del proyecto
 import CustomButton from "../components/CustomButton";
 import Footer from "../components/Footer";
@@ -73,10 +73,7 @@ const RegisterPetScreen = () => {
   const loadPetData = async () => {
     setLoading(true);
     try {
-      const API_URL =
-        Platform.OS === "android"
-          ? "http://10.0.2.2:3000"
-          : "http://localhost:3000";
+      const API_URL = API_BASE_URL;
       const petId = Array.isArray(id) ? id[0] : id;
       const response = await axios.get(`${API_URL}/api/pets/${petId}`);
 
@@ -131,10 +128,7 @@ const RegisterPetScreen = () => {
 
     setLoading(true);
     try {
-      const API_URL =
-        Platform.OS === "android"
-          ? "http://10.0.2.2:3000"
-          : "http://localhost:3000";
+      const API_URL = API_BASE_URL;
 
       let response;
       if (isEditing) {

@@ -14,17 +14,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
 import SingleBtnModal from "../components/modals/SingleBtnModal";
+import API_BASE_URL from "../config/api";
 
-const BackIcon     = require("../../assets/IconoVolver.webp");
+const BackIcon = require("../../assets/IconoVolver.webp");
 const CalendarIcon = require("../../assets/IconoCalendario.webp");
-const CheckIcon    = require("../../assets/IconoCheck.webp");
-const AlertIcon    = require("../../assets/IconoAlerta.webp");
+const CheckIcon = require("../../assets/IconoCheck.webp");
+const AlertIcon = require("../../assets/IconoAlerta.webp");
 
-const API_URL = "http://localhost:3000";
+const API_URL = API_BASE_URL;
 
 // ── Tipos ─────────────────────────────────────────────────────
 interface Pet {
@@ -34,10 +34,10 @@ interface Pet {
 }
 
 interface ModalState {
-  visible:  boolean;
-  title:    string;
+  visible: boolean;
+  title: string;
   subtitle: string;
-  success:  boolean;
+  success: boolean;
 }
 
 // ── Selector de Mascota ───────────────────────────────────────
@@ -75,7 +75,7 @@ const PetSelector = ({
 );
 
 const selectorStyles = StyleSheet.create({
-  container:   { gap: 8, marginBottom: 16 },
+  container: { gap: 8, marginBottom: 16 },
   option: {
     borderWidth: 1,
     borderColor: "#D1D5DC",
@@ -85,8 +85,8 @@ const selectorStyles = StyleSheet.create({
     backgroundColor: "white",
   },
   optionActive: { borderColor: "#00A63E", backgroundColor: "#DCFCE7" },
-  text:         { color: "#4A5565", fontSize: 15, fontWeight: "400" },
-  textActive:   { color: "#008236", fontWeight: "600" },
+  text: { color: "#4A5565", fontSize: 15, fontWeight: "400" },
+  textActive: { color: "#008236", fontWeight: "600" },
 });
 
 // ── Selector de Tipo de Hospedaje ─────────────────────────────
@@ -129,8 +129,8 @@ const hospStyles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "white",
   },
-  btnActive:     { borderColor: "#00A63E", backgroundColor: "#DCFCE7" },
-  btnText:       { color: "#4A5565", fontSize: 15, fontWeight: "500" },
+  btnActive: { borderColor: "#00A63E", backgroundColor: "#DCFCE7" },
+  btnText: { color: "#4A5565", fontSize: 15, fontWeight: "500" },
   btnTextActive: { color: "#008236", fontWeight: "700" },
 });
 
@@ -176,26 +176,31 @@ const NewReservationScreen = () => {
   const router = useRouter();
 
   // Sesión y mascotas
-  const [userId,      setUserId]      = useState<string | null>(null);
-  const [pets,        setPets]        = useState<Pet[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [loadingPets, setLoadingPets] = useState(true);
 
   // Campos del formulario
-  const [selectedPetId,         setSelectedPetId]         = useState("");
-  const [fechaIngreso,          setFechaIngreso]          = useState("");
-  const [fechaSalida,           setFechaSalida]           = useState("");
-  const [numeroHabitacion,      setNumeroHabitacion]      = useState("");
-  const [tipoHospedaje,         setTipoHospedaje]         = useState<"estandar" | "especial">("estandar");
+  const [selectedPetId, setSelectedPetId] = useState("");
+  const [fechaIngreso, setFechaIngreso] = useState("");
+  const [fechaSalida, setFechaSalida] = useState("");
+  const [numeroHabitacion, setNumeroHabitacion] = useState("");
+  const [tipoHospedaje, setTipoHospedaje] = useState<"estandar" | "especial">(
+    "estandar",
+  );
 
   // Servicios adicionales
-  const [bano,                  setBano]                  = useState(false);
-  const [paseo,                 setPaseo]                 = useState(false);
-  const [alimentacionEspecial,  setAlimentacionEspecial]  = useState(false);
+  const [bano, setBano] = useState(false);
+  const [paseo, setPaseo] = useState(false);
+  const [alimentacionEspecial, setAlimentacionEspecial] = useState(false);
 
   // UI
   const [submitting, setSubmitting] = useState(false);
-  const [modal,      setModal]      = useState<ModalState>({
-    visible: false, title: "", subtitle: "", success: false,
+  const [modal, setModal] = useState<ModalState>({
+    visible: false,
+    title: "",
+    subtitle: "",
+    success: false,
   });
 
   // ── Cargar datos de sesión y mascotas ────────────────────
@@ -207,7 +212,10 @@ const NewReservationScreen = () => {
       } else {
         session = await SecureStore.getItemAsync("userSession");
       }
-      if (!session) { router.replace("/"); return; }
+      if (!session) {
+        router.replace("/");
+        return;
+      }
 
       const parsed = JSON.parse(session);
       setUserId(parsed._id);
@@ -221,7 +229,9 @@ const NewReservationScreen = () => {
     }
   }, [router]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Reset servicios al cambiar a estándar
   useEffect(() => {
@@ -234,16 +244,18 @@ const NewReservationScreen = () => {
 
   // ── Validación ───────────────────────────────────────────
   const validate = (): string | null => {
-    if (!selectedPetId)                        return "Selecciona una mascota.";
-    if (!fechaIngreso)                         return "Ingresa la fecha de ingreso (YYYY-MM-DD).";
-    if (!fechaSalida)                          return "Ingresa la fecha de salida (YYYY-MM-DD).";
+    if (!selectedPetId) return "Selecciona una mascota.";
+    if (!fechaIngreso) return "Ingresa la fecha de ingreso (YYYY-MM-DD).";
+    if (!fechaSalida) return "Ingresa la fecha de salida (YYYY-MM-DD).";
     const ing = new Date(fechaIngreso);
     const sal = new Date(fechaSalida);
-    if (isNaN(ing.getTime()))                  return "Formato de fecha de ingreso inválido (YYYY-MM-DD).";
-    if (isNaN(sal.getTime()))                  return "Formato de fecha de salida inválido (YYYY-MM-DD).";
-    if (sal <= ing)                            return "La fecha de salida debe ser posterior al ingreso.";
+    if (isNaN(ing.getTime()))
+      return "Formato de fecha de ingreso inválido (YYYY-MM-DD).";
+    if (isNaN(sal.getTime()))
+      return "Formato de fecha de salida inválido (YYYY-MM-DD).";
+    if (sal <= ing) return "La fecha de salida debe ser posterior al ingreso.";
     if (!numeroHabitacion || isNaN(Number(numeroHabitacion)))
-                                               return "Ingresa un número de habitación válido.";
+      return "Ingresa un número de habitación válido.";
     return null;
   };
 
@@ -251,7 +263,12 @@ const NewReservationScreen = () => {
   const handleSubmit = async () => {
     const err = validate();
     if (err) {
-      setModal({ visible: true, title: "Campos inválidos", subtitle: err, success: false });
+      setModal({
+        visible: true,
+        title: "Campos inválidos",
+        subtitle: err,
+        success: false,
+      });
       return;
     }
 
@@ -262,25 +279,32 @@ const NewReservationScreen = () => {
       setSubmitting(true);
       await axios.post(`${API_URL}/api/reservations`, {
         ownerId: userId,
-        petId:   selectedPetId,
+        petId: selectedPetId,
         petName: pet.nombre,
         petType: pet.tipo,
         fechaIngreso,
         fechaSalida,
-        numeroHabitacion:     Number(numeroHabitacion),
+        numeroHabitacion: Number(numeroHabitacion),
         tipoHospedaje,
         serviciosAdicionales: { bano, paseo, alimentacionEspecial },
       });
       setModal({
-        visible:  true,
-        title:    "¡Reserva creada!",
-        subtitle: "Tu solicitud fue registrada. Pronto recibirás una confirmación.",
-        success:  true,
+        visible: true,
+        title: "¡Reserva creada!",
+        subtitle:
+          "Tu solicitud fue registrada. Pronto recibirás una confirmación.",
+        success: true,
       });
     } catch (e: any) {
       const msg =
-        e?.response?.data?.message || "Error al crear la reserva. Intenta de nuevo.";
-      setModal({ visible: true, title: "Error", subtitle: msg, success: false });
+        e?.response?.data?.message ||
+        "Error al crear la reserva. Intenta de nuevo.";
+      setModal({
+        visible: true,
+        title: "Error",
+        subtitle: msg,
+        success: false,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -298,7 +322,11 @@ const NewReservationScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Image source={BackIcon} style={styles.backIcon} resizeMode="contain" />
+          <Image
+            source={BackIcon}
+            style={styles.backIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nueva Reserva</Text>
         <View style={{ width: 24 }} />
@@ -316,7 +344,8 @@ const NewReservationScreen = () => {
         ) : pets.length === 0 ? (
           <View style={styles.noPetsBox}>
             <Text style={styles.noPetsText}>
-              No tienes mascotas registradas. Registra una primero para hacer una reserva.
+              No tienes mascotas registradas. Registra una primero para hacer
+              una reserva.
             </Text>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -369,9 +398,13 @@ const NewReservationScreen = () => {
             <Text style={styles.serviciosHint}>
               Disponibles únicamente en hospedaje de tipo Especial.
             </Text>
-            <ServiceRow label="Baño"                   value={bano}                onChange={setBano} />
-            <ServiceRow label="Paseo"                  value={paseo}               onChange={setPaseo} />
-            <ServiceRow label="Alimentación Especial"  value={alimentacionEspecial} onChange={setAlimentacionEspecial} />
+            <ServiceRow label="Baño" value={bano} onChange={setBano} />
+            <ServiceRow label="Paseo" value={paseo} onChange={setPaseo} />
+            <ServiceRow
+              label="Alimentación Especial"
+              value={alimentacionEspecial}
+              onChange={setAlimentacionEspecial}
+            />
           </View>
         ) : (
           <View style={styles.infoBox}>
@@ -444,7 +477,7 @@ const styles = StyleSheet.create({
   noPetsText: { color: "#A65F00", fontSize: 14 },
   noPetsLink: { color: "#155DFC", fontSize: 14, fontWeight: "600" },
   serviciosSection: { marginBottom: 16, gap: 4 },
-  serviciosHint:    { color: "#6A7282", fontSize: 12, marginBottom: 10 },
+  serviciosHint: { color: "#6A7282", fontSize: 12, marginBottom: 10 },
   infoBox: {
     backgroundColor: "#EFF6FF",
     borderRadius: 10,
