@@ -10,6 +10,7 @@ export default function MainLayout() {
     >
       <Stack.Screen name="home" />
       <Stack.Screen name="pets" />
+      <Stack.Screen name="bookings" />
       <Stack.Screen name="profile" />
     </Stack>
   );
