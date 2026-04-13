@@ -4,7 +4,7 @@
     "slug": "Test01AP",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/LogoPetLodgePng.png",
     "scheme": "test01ap",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,25 +12,27 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.petlodge.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/LogoPetLodgePng.png",
+        "backgroundImage": "./assets/LogoPetLodgePng.png",
+        "monochromeImage": "./assets/LogoPetLodgePng.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/LogoPetLodgePng.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/LogoPetLodgePng.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -46,7 +48,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "API_BASE_URL": "https://petlodge-backend.onrender.com"
+      "API_BASE_URL": "https://petlodge-backend.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "3fcaccf9-adf7-46bc-812f-fc28c791f87d"
+      }
     }
   }
 }
