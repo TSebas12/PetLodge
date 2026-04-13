@@ -44,6 +44,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "API_BASE_URL": "https://petlodge-backend.onrender.com"
     }
   }
 }

@@ -25,6 +25,14 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+### Backend URL configuration
+
+The mobile app reads the backend base URL from `Constants.expoConfig.extra.API_BASE_URL`.
+
+- For local development, the default is `http://localhost:3000`.
+- For Android emulator, the app will use `http://10.0.2.2:3000` unless `API_BASE_URL` is set.
+- For a deployed backend, update `app.json` `expo.extra.API_BASE_URL` to your Render URL.
+
 ## Get a fresh project
 
 When you're ready, run:

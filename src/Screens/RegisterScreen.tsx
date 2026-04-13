@@ -2,12 +2,12 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -110,7 +110,7 @@ const RegisterScreen = () => {
     const delay = new Promise((resolve) => setTimeout(resolve, 1200));
 
     try {
-      const API_URL = API_BASE_URL;
+      const API_URL = `${API_BASE_URL}/api/users/register`;
       const [response] = await Promise.all([
         axios.post(API_URL, {
           fullName,

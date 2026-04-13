@@ -2,12 +2,12 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import API_BASE_URL from "../config/api";
@@ -53,6 +53,7 @@ const LoginScreen = () => {
     try {
       // AJUSTE DE URL: Si es Web usa localhost, si es móvil usa la IP
       const API_URL = `${API_BASE_URL}/api/users/login`;
+      console.log("Login request URL:", API_URL);
 
       const response = await fetch(API_URL, {
         method: "POST",
@@ -63,7 +64,15 @@ const LoginScreen = () => {
         }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        data = {
+          message: `Servidor respondió con texto no JSON: ${responseText}`,
+        };
+      }
 
       if (response.ok) {
         if (data.user) {
