@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Test01AP",
-    "slug": "Test01AP",
+    "name": "PetLodge",
+    "slug": "petlodge-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/LogoPetLodgePng.png",
-    "scheme": "test01ap",
+    "scheme": "petlodge-app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
