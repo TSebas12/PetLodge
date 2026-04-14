@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Platform,
   RefreshControl,
   ScrollView,
@@ -47,6 +48,12 @@ interface Reservation {
   estado: EstadoReserva;
   serviciosAdicionales?: ServiciosAdicionales;
   solicitudesEspeciales?: string;
+}
+
+interface CancelModalState {
+  visible: boolean;
+  reservationId: string | null;
+  reservationLabel: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -103,7 +110,7 @@ const ReservationCard = ({
   onCancel,
 }: {
   reservation: Reservation;
-  onCancel: (id: string) => void;
+  onCancel: (reservation: Reservation) => void;
 }) => {
   const router = useRouter();
   const colors = ESTADO_COLORS[reservation.estado];
@@ -113,7 +120,6 @@ const ReservationCard = ({
 
   return (
     <View style={cardStyles.card}>
-      {/* ── Encabezado ── */}
       <View style={cardStyles.header}>
         <Text style={cardStyles.reservaId}>
           Reserva #{reservation._id.slice(-5).toUpperCase()}
@@ -125,12 +131,10 @@ const ReservationCard = ({
         </View>
       </View>
 
-      {/* ── Mascota ── */}
       <Text style={cardStyles.petName}>
         Mascota: {reservation.petName} ({reservation.petType})
       </Text>
 
-      {/* ── Detalle completo: fechas, habitación, tipo, servicios ── */}
       <View style={cardStyles.detailsBlock}>
         <View style={cardStyles.detailRowGrid}>
           <View style={{ flex: 1 }}>
@@ -146,6 +150,7 @@ const ReservationCard = ({
             />
           </View>
         </View>
+
         <View style={cardStyles.detailRowGrid}>
           <View style={{ flex: 1 }}>
             <DetailRow
@@ -164,14 +169,13 @@ const ReservationCard = ({
             />
           </View>
         </View>
-        {/* Servicios – siempre visible para completitud de rúbrica */}
+
         <DetailRow label="Servicios:" value={servicios} />
         {reservation.solicitudesEspeciales ? (
           <DetailRow label="Notas:" value={reservation.solicitudesEspeciales} />
         ) : null}
       </View>
 
-      {/* ── Botones ── */}
       <View style={cardStyles.buttons}>
         <CustomButtonIcon
           title="Ver Detalles"
@@ -184,13 +188,14 @@ const ReservationCard = ({
             } as any)
           }
         />
+
         {canCancel && (
           <View style={{ marginTop: 6 }}>
             <CustomButtonIcon
               title="Cancelar"
               icon={XIcon}
               type="danger"
-              onPress={() => onCancel(reservation._id)}
+              onPress={() => onCancel(reservation)}
             />
           </View>
         )}
@@ -245,6 +250,12 @@ const MyReservationsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("todas");
   const [isMounted, setIsMounted] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelModal, setCancelModal] = useState<CancelModalState>({
+    visible: false,
+    reservationId: null,
+    reservationLabel: "",
+  });
 
   useEffect(() => {
     setIsMounted(true);
@@ -258,6 +269,7 @@ const MyReservationsScreen = () => {
       } else {
         session = await SecureStore.getItemAsync("userSession");
       }
+
       if (!session) {
         if (isMounted) router.replace("/");
         return;
@@ -280,12 +292,39 @@ const MyReservationsScreen = () => {
     if (isMounted) loadReservations();
   }, [isMounted, loadReservations]);
 
-  const handleCancel = async (id: string) => {
+  const openCancelModal = (reservation: Reservation) => {
+    setCancelModal({
+      visible: true,
+      reservationId: reservation._id,
+      reservationLabel: `Reserva #${reservation._id
+        .slice(-5)
+        .toUpperCase()} de ${reservation.petName}`,
+    });
+  };
+
+  const closeCancelModal = () => {
+    if (cancelLoading) return;
+    setCancelModal({
+      visible: false,
+      reservationId: null,
+      reservationLabel: "",
+    });
+  };
+
+  const confirmCancelReservation = async () => {
+    if (!cancelModal.reservationId) return;
+
     try {
-      await axios.patch(`${API_URL}/api/reservations/${id}/cancel`);
+      setCancelLoading(true);
+      await axios.patch(
+        `${API_URL}/api/reservations/${cancelModal.reservationId}/cancel`,
+      );
+      closeCancelModal();
       loadReservations();
     } catch (err) {
       console.error("Error al cancelar:", err);
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -299,7 +338,6 @@ const MyReservationsScreen = () => {
     }
   };
 
-  // ── Filtrado por tab ──────────────────────────────────────
   const filtered = reservations.filter((r) => {
     if (activeTab === "todas") return true;
     if (activeTab === "activas") return r.estado === "activa";
@@ -309,7 +347,6 @@ const MyReservationsScreen = () => {
     return true;
   });
 
-  // ── Contadores por tab ────────────────────────────────────
   const counts: Record<TabKey, number> = {
     todas: reservations.length,
     activas: reservations.filter((r) => r.estado === "activa").length,
@@ -321,7 +358,6 @@ const MyReservationsScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
@@ -350,7 +386,6 @@ const MyReservationsScreen = () => {
           />
         }
       >
-        {/* Título */}
         <View style={styles.titleBlock}>
           <Text style={styles.mainTitle}>Mis Reservas</Text>
           <Text style={styles.subtitle}>
@@ -358,7 +393,6 @@ const MyReservationsScreen = () => {
           </Text>
         </View>
 
-        {/* Botón Nueva Reserva */}
         <View style={styles.newBtnWrapper}>
           <CustomButtonIcon
             title="Nueva Reserva"
@@ -368,7 +402,6 @@ const MyReservationsScreen = () => {
           />
         </View>
 
-        {/* Tabs con contador */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -411,7 +444,6 @@ const MyReservationsScreen = () => {
           ))}
         </ScrollView>
 
-        {/* Lista */}
         {loading ? (
           <ActivityIndicator
             color="#00A63E"
@@ -438,11 +470,58 @@ const MyReservationsScreen = () => {
             <ReservationCard
               key={r._id}
               reservation={r}
-              onCancel={handleCancel}
+              onCancel={openCancelModal}
             />
           ))
         )}
       </ScrollView>
+
+      <Modal
+        visible={cancelModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCancelModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirmar cancelación</Text>
+            <Text style={styles.modalText}>
+              ¿Seguro que deseas cancelar{" "}
+              <Text style={styles.modalTextBold}>
+                {cancelModal.reservationLabel}
+              </Text>
+              ?
+            </Text>
+            <Text style={styles.modalHint}>
+              Esta acción cambiará el estado de la reserva a cancelada.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={closeCancelModal}
+                style={[styles.modalBtn, styles.modalBtnSecondary]}
+                disabled={cancelLoading}
+              >
+                <Text style={styles.modalBtnSecondaryText}>Volver</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={confirmCancelReservation}
+                style={[styles.modalBtn, styles.modalBtnDanger]}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.modalBtnDangerText}>Sí, cancelar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Footer />
     </SafeAreaView>
@@ -525,6 +604,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 22,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(16, 24, 40, 0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  modalTitle: {
+    color: "#101828",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  modalText: {
+    color: "#4A5565",
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  modalTextBold: {
+    color: "#101828",
+    fontWeight: "700",
+  },
+  modalHint: {
+    color: "#6A7282",
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 20,
+  },
+  modalBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  modalBtnSecondary: {
+    backgroundColor: "#F3F4F6",
+  },
+  modalBtnDanger: {
+    backgroundColor: "#DC2626",
+  },
+  modalBtnSecondaryText: {
+    color: "#374151",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalBtnDangerText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
 
