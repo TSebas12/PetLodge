@@ -872,7 +872,7 @@ const NewReservationScreen = () => {
             <View style={{ flex: 1 }}>
               <CustomButton
                 title="Cancelar"
-                type="secondary"
+                type="danger"
                 onPress={() => router.back()}
               />
             </View>

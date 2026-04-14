@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Image,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import API_BASE_URL from "../config/api";
@@ -37,6 +37,29 @@ const LoginScreen = () => {
     icon: IconoAlerta,
   });
 
+  // --- BLOQUE DE PERSISTENCIA ---
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        let session = null;
+        if (Platform.OS === "web") {
+          session = localStorage.getItem("userSession");
+        } else {
+          session = await SecureStore.getItemAsync("userSession");
+        }
+
+        if (session) {
+          router.replace("/home" as any);
+        }
+      } catch (error) {
+        console.error("Error comprobando sesión persistente:", error);
+      }
+    };
+
+    checkSession();
+  }, []);
+  // ----------------------------------------------------
+
   const handleLogin = async () => {
     if (!email || !password) {
       setModalData({
@@ -51,7 +74,6 @@ const LoginScreen = () => {
     setLoading(true);
 
     try {
-      // AJUSTE DE URL: Si es Web usa localhost, si es móvil usa la IP
       const API_URL = `${API_BASE_URL}/api/users/login`;
       console.log("Login request URL:", API_URL);
 
@@ -76,10 +98,8 @@ const LoginScreen = () => {
 
       if (response.ok) {
         if (data.user) {
-          // --- PRUEBA DE PERSISTENCIA HÍBRIDA ---
           try {
             if (Platform.OS === "web") {
-              // En Web usamos localStorage si SecureStore da problemas
               localStorage.setItem("userSession", JSON.stringify(data.user));
               console.log("LOGIN EXITOSO: Guardado en localStorage (Web)");
             } else {
@@ -124,7 +144,6 @@ const LoginScreen = () => {
       setLoading(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <LoadingModal visible={loading} message="Validando credenciales..." />
