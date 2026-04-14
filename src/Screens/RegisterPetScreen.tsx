@@ -29,6 +29,23 @@ const IconoCheck = require("../../assets/IconoCheck.webp");
 const IconUpload = require("../../assets/IconUpload.webp");
 const IconoVolver = require("../../assets/IconoVolver.webp");
 
+interface PetFormData {
+  nombre: string;
+  tipo: string;
+  raza: string;
+  edad: string;
+  sexo: string;
+  tamano: string;
+  foto: string;
+  vacunado: boolean | null; // <-- Aquí permitimos ambos
+  especificarVacunas: string;
+  condicionesMedicas: boolean | null; // <-- Aquí también
+  especificarCondiciones: string;
+  vetNombre: string;
+  vetTelefono: string;
+  cuidados: string;
+}
+
 const RegisterPetScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -53,13 +70,15 @@ const RegisterPetScreen = () => {
     tamano: "",
     foto: "sample_url.jpg",
     vacunado: null,
+    especificarVacunas: "",
     condicionesMedicas: null,
+    especificarCondiciones: "",
     vetNombre: "",
     vetTelefono: "",
     cuidados: "",
   };
 
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState<PetFormData>(initialFormState);
 
   useEffect(() => {
     if (isEditing) {
@@ -112,14 +131,17 @@ const RegisterPetScreen = () => {
   };
 
   const handleSave = async () => {
-    if (
-      !formData.nombre.trim() ||
-      !formData.tipo.trim() ||
-      !formData.raza.trim()
-    ) {
+    const camposIncompletos = Object.entries(formData).some(([key, value]) => {
+      if (key === "foto") return false;
+      if (value === null) return true;
+      if (typeof value === "string" && value.trim() === "") return true;
+      return false;
+    });
+
+    if (camposIncompletos) {
       setModalConfig({
-        title: "Faltan datos",
-        msg: "Por favor, completa los campos obligatorios: Nombre, Tipo y Raza.",
+        title: "Formulario Incompleto",
+        msg: "Por favor, completa todos los campos del formulario antes de continuar.",
         icon: IconoAlerta,
       });
       setModalVisible(true);
@@ -128,6 +150,7 @@ const RegisterPetScreen = () => {
 
     setLoading(true);
     try {
+      console.log("Datos a enviar:", formData); // Debug: Ver qué datos se están enviando
       const API_URL = API_BASE_URL;
 
       let response;
@@ -140,10 +163,21 @@ const RegisterPetScreen = () => {
             ? localStorage.getItem("userSession")
             : await SecureStore.getItemAsync("userSession");
         const user = JSON.parse(sessionStr || "{}");
-        response = await axios.post(`${API_URL}/api/pets`, {
+        const payload = {
           ...formData,
           ownerId: user._id,
-        });
+          foto: formData.foto,
+
+          especificarVacunas: formData.vacunado
+            ? formData.especificarVacunas
+            : "Al día / No aplica",
+
+          especificarCondiciones: formData.condicionesMedicas
+            ? formData.especificarCondiciones
+            : "Ninguna",
+        };
+        response = await axios.post(`${API_URL}/api/pets`, payload);
+        console.log("Respuesta del servidor:", response); // Debug: Ver qué responde el servidor
       }
 
       if (response.status === 200 || response.status === 201) {
@@ -246,7 +280,7 @@ const RegisterPetScreen = () => {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Edad</Text>
+            <Text style={styles.label}>Edad (años)</Text>
             <TextInput
               style={styles.input}
               value={formData.edad.toString()}
@@ -335,6 +369,7 @@ const RegisterPetScreen = () => {
           {/* SECCIÓN: SALUD */}
           <Text style={styles.sectionTitle}>Estado de Salud</Text>
 
+          {/* SECCIÓN VACUNAS */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>¿Tiene sus vacunas al día?</Text>
             <View style={styles.selectorRow}>
@@ -343,7 +378,13 @@ const RegisterPetScreen = () => {
                   styles.selectorBtn,
                   formData.vacunado === true && styles.selectorBtnActive,
                 ]}
-                onPress={() => handleInputChange("vacunado", true)}
+                onPress={() => {
+                  setFormData({
+                    ...formData,
+                    vacunado: true,
+                    especificarVacunas: "",
+                  });
+                }}
               >
                 <Text
                   style={[
@@ -359,7 +400,13 @@ const RegisterPetScreen = () => {
                   styles.selectorBtn,
                   formData.vacunado === false && styles.selectorBtnActive,
                 ]}
-                onPress={() => handleInputChange("vacunado", false)}
+                onPress={() => {
+                  setFormData({
+                    ...formData,
+                    vacunado: false,
+                    especificarVacunas: "Al día / No aplica",
+                  });
+                }}
               >
                 <Text
                   style={[
@@ -373,6 +420,20 @@ const RegisterPetScreen = () => {
             </View>
           </View>
 
+          {/* INPUT CONDICIONAL VACUNAS: Solo visible si es TRUE */}
+          {formData.vacunado === true && (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Especificar vacunas</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: Distemper, Parvovirus..."
+                value={formData.especificarVacunas}
+                onChangeText={(v) => handleInputChange("especificarVacunas", v)}
+              />
+            </View>
+          )}
+
+          {/* SECCIÓN CONDICIONES MÉDICAS */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>¿Tiene condiciones médicas?</Text>
             <View style={styles.selectorRow}>
@@ -382,7 +443,13 @@ const RegisterPetScreen = () => {
                   formData.condicionesMedicas === true &&
                     styles.selectorBtnActiveRed,
                 ]}
-                onPress={() => handleInputChange("condicionesMedicas", true)}
+                onPress={() => {
+                  setFormData({
+                    ...formData,
+                    condicionesMedicas: true,
+                    especificarCondiciones: "",
+                  });
+                }}
               >
                 <Text
                   style={[
@@ -400,7 +467,13 @@ const RegisterPetScreen = () => {
                   formData.condicionesMedicas === false &&
                     styles.selectorBtnActive,
                 ]}
-                onPress={() => handleInputChange("condicionesMedicas", false)}
+                onPress={() => {
+                  setFormData({
+                    ...formData,
+                    condicionesMedicas: false,
+                    especificarCondiciones: "Ninguna",
+                  });
+                }}
               >
                 <Text
                   style={[
@@ -414,6 +487,21 @@ const RegisterPetScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* INPUT CONDICIONAL CONDICIONES: Solo visible si es TRUE */}
+          {formData.condicionesMedicas === true && (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Especificar condiciones</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: Alergias, asma..."
+                value={formData.especificarCondiciones}
+                onChangeText={(v) =>
+                  handleInputChange("especificarCondiciones", v)
+                }
+              />
+            </View>
+          )}
 
           {/* SECCIÓN: VETERINARIO */}
           <Text style={styles.sectionTitle}>Veterinario de Confianza</Text>

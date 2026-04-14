@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DoubleBtnModal from "../components/modals/DoubleBtnModal";
+import SingleBtnModal from "../components/modals/SingleBtnModal";
 import API_BASE_URL from "../config/api";
 
 // Componentes del proyecto
@@ -33,6 +34,8 @@ const MyPetsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -95,23 +98,28 @@ const MyPetsScreen = () => {
 
     try {
       const API_URL = API_BASE_URL;
-
       const response = await axios.delete(
         `${API_URL}/api/pets/${selectedPetId}`,
       );
 
       if (response.status === 200) {
-        // Actualizamos la lista local eliminando la mascota borrada
         setMyPets((prev) =>
           prev.filter((pet: any) => pet._id !== selectedPetId),
         );
         setDeleteModalVisible(false);
         setSelectedPetId(null);
       }
-    } catch (error) {
-      console.error("Error al eliminar mascota:", error);
-      alert("No se pudo eliminar la mascota. Inténtalo de nuevo.");
-      setDeleteModalVisible(false);
+    } catch (error: any) {
+      setDeleteModalVisible(false); // Cerramos el modal de confirmación
+
+      // Si el backend nos da el error de validación
+      if (error.response && error.response.status === 400) {
+        setErrorMessage(error.response.data.message);
+        setErrorModalVisible(true); // Mostramos el modal de "No se puede"
+      } else {
+        console.error("Error al eliminar mascota:", error);
+        alert("Ocurrió un error inesperado.");
+      }
     }
   };
 
@@ -190,6 +198,14 @@ const MyPetsScreen = () => {
         subtitle="Esta acción no se puede deshacer. Los datos de tu mascota se borrarán permanentemente."
         onClose={() => setDeleteModalVisible(false)} // Si cancela, solo cerramos
         onConfirm={handleDeleteConfirm} // Si confirma, borramos en la BD
+      />
+
+      <SingleBtnModal
+        visible={errorModalVisible}
+        icon={IconoAlerta} // Puedes usar el mismo de alerta
+        title="Acción denegada"
+        subtitle={errorMessage}
+        onConfirm={() => setErrorModalVisible(false)}
       />
       <Footer />
     </SafeAreaView>
