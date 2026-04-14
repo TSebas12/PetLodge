@@ -21,14 +21,20 @@ import API_BASE_URL from "../config/api";
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
 const PlusIcon = require("../../assets/IconoPlus.webp");
-const EyeIcon = require("../../assets/IconoOjo.webp");
-const XIcon = require("../../assets/IconoEquis.webp");
+const EyeIcon = require("../../assets/IconoCheck.webp");
+const XIcon = require("../../assets/IconoX.webp");
 
 const API_URL = API_BASE_URL;
 
 // ── Tipos ─────────────────────────────────────────────────────
 type EstadoReserva = "pendiente" | "activa" | "finalizada" | "cancelada";
 type TabKey = "todas" | "activas" | "pendientes" | "finalizadas";
+
+interface ServiciosAdicionales {
+  bano: boolean;
+  paseo: boolean;
+  alimentacionEspecial: boolean;
+}
 
 interface Reservation {
   _id: string;
@@ -39,6 +45,8 @@ interface Reservation {
   numeroHabitacion: number;
   tipoHospedaje: "estandar" | "especial";
   estado: EstadoReserva;
+  serviciosAdicionales?: ServiciosAdicionales;
+  solicitudesEspeciales?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -70,7 +78,26 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "finalizadas", label: "Finalizadas" },
 ];
 
-// ── Card individual de reserva ────────────────────────────────
+const getServiciosText = (r: Reservation): string => {
+  if (r.tipoHospedaje !== "especial") return "Ninguno";
+  const s = r.serviciosAdicionales;
+  if (!s) return "Ninguno";
+  const activos: string[] = [];
+  if (s.bano) activos.push("Baño");
+  if (s.paseo) activos.push("Paseo");
+  if (s.alimentacionEspecial) activos.push("Alimentación especial");
+  return activos.length ? activos.join(", ") : "Ninguno";
+};
+
+// ── Fila de detalle interna de la card ───────────────────────
+const DetailRow = ({ label, value }: { label: string; value: string }) => (
+  <View style={cardStyles.detailRow}>
+    <Text style={cardStyles.detailLabel}>{label}</Text>
+    <Text style={cardStyles.detailValue}>{value}</Text>
+  </View>
+);
+
+// ── Card de Reserva ───────────────────────────────────────────
 const ReservationCard = ({
   reservation,
   onCancel,
@@ -82,10 +109,11 @@ const ReservationCard = ({
   const colors = ESTADO_COLORS[reservation.estado];
   const canCancel =
     reservation.estado === "pendiente" || reservation.estado === "activa";
+  const servicios = getServiciosText(reservation);
 
   return (
     <View style={cardStyles.card}>
-      {/* Encabezado */}
+      {/* ── Encabezado ── */}
       <View style={cardStyles.header}>
         <Text style={cardStyles.reservaId}>
           Reserva #{reservation._id.slice(-5).toUpperCase()}
@@ -97,43 +125,53 @@ const ReservationCard = ({
         </View>
       </View>
 
+      {/* ── Mascota ── */}
       <Text style={cardStyles.petName}>
         Mascota: {reservation.petName} ({reservation.petType})
       </Text>
 
-      {/* Fechas */}
-      <View style={cardStyles.row}>
-        <View style={cardStyles.col}>
-          <Text style={cardStyles.fieldLabel}>Ingreso:</Text>
-          <Text style={cardStyles.fieldValue}>
-            {formatDate(reservation.fechaIngreso)}
-          </Text>
+      {/* ── Detalle completo: fechas, habitación, tipo, servicios ── */}
+      <View style={cardStyles.detailsBlock}>
+        <View style={cardStyles.detailRowGrid}>
+          <View style={{ flex: 1 }}>
+            <DetailRow
+              label="Ingreso:"
+              value={formatDate(reservation.fechaIngreso)}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <DetailRow
+              label="Salida:"
+              value={formatDate(reservation.fechaSalida)}
+            />
+          </View>
         </View>
-        <View style={cardStyles.col}>
-          <Text style={cardStyles.fieldLabel}>Salida:</Text>
-          <Text style={cardStyles.fieldValue}>
-            {formatDate(reservation.fechaSalida)}
-          </Text>
+        <View style={cardStyles.detailRowGrid}>
+          <View style={{ flex: 1 }}>
+            <DetailRow
+              label="Habitación:"
+              value={String(reservation.numeroHabitacion)}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <DetailRow
+              label="Tipo:"
+              value={
+                reservation.tipoHospedaje === "especial"
+                  ? "Especial"
+                  : "Estándar"
+              }
+            />
+          </View>
         </View>
+        {/* Servicios – siempre visible para completitud de rúbrica */}
+        <DetailRow label="Servicios:" value={servicios} />
+        {reservation.solicitudesEspeciales ? (
+          <DetailRow label="Notas:" value={reservation.solicitudesEspeciales} />
+        ) : null}
       </View>
 
-      {/* Habitación y Tipo */}
-      <View style={cardStyles.row}>
-        <View style={cardStyles.col}>
-          <Text style={cardStyles.fieldLabel}>Habitación:</Text>
-          <Text style={cardStyles.fieldValue}>
-            {reservation.numeroHabitacion}
-          </Text>
-        </View>
-        <View style={cardStyles.col}>
-          <Text style={cardStyles.fieldLabel}>Tipo:</Text>
-          <Text style={cardStyles.fieldValue}>
-            {reservation.tipoHospedaje === "especial" ? "Especial" : "Estándar"}
-          </Text>
-        </View>
-      </View>
-
-      {/* Botones */}
+      {/* ── Botones ── */}
       <View style={cardStyles.buttons}>
         <CustomButtonIcon
           title="Ver Detalles"
@@ -185,14 +223,20 @@ const cardStyles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: { fontSize: 12, fontWeight: "600" },
   petName: { color: "#4A5565", fontSize: 14 },
-  row: { flexDirection: "row", gap: 16 },
-  col: { flex: 1, gap: 2 },
-  fieldLabel: { color: "#6A7282", fontSize: 12, fontWeight: "400" },
-  fieldValue: { color: "#101828", fontSize: 14, fontWeight: "600" },
+  detailsBlock: {
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingTop: 10,
+  },
+  detailRowGrid: { flexDirection: "row", gap: 8 },
+  detailRow: { gap: 1 },
+  detailLabel: { color: "#6A7282", fontSize: 12 },
+  detailValue: { color: "#101828", fontSize: 13, fontWeight: "600" },
   buttons: { marginTop: 4 },
 });
 
-// ── Pantalla ──────────────────────────────────────────────────
+// ── Pantalla Principal ────────────────────────────────────────
 const MyReservationsScreen = () => {
   const router = useRouter();
 
@@ -214,7 +258,6 @@ const MyReservationsScreen = () => {
       } else {
         session = await SecureStore.getItemAsync("userSession");
       }
-
       if (!session) {
         if (isMounted) router.replace("/");
         return;
@@ -256,6 +299,7 @@ const MyReservationsScreen = () => {
     }
   };
 
+  // ── Filtrado por tab ──────────────────────────────────────
   const filtered = reservations.filter((r) => {
     if (activeTab === "todas") return true;
     if (activeTab === "activas") return r.estado === "activa";
@@ -265,9 +309,19 @@ const MyReservationsScreen = () => {
     return true;
   });
 
+  // ── Contadores por tab ────────────────────────────────────
+  const counts: Record<TabKey, number> = {
+    todas: reservations.length,
+    activas: reservations.filter((r) => r.estado === "activa").length,
+    pendientes: reservations.filter((r) => r.estado === "pendiente").length,
+    finalizadas: reservations.filter(
+      (r) => r.estado === "finalizada" || r.estado === "cancelada",
+    ).length,
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={Logo} style={styles.headerLogo} resizeMode="contain" />
@@ -282,7 +336,6 @@ const MyReservationsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* ── Contenido ── */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -315,7 +368,7 @@ const MyReservationsScreen = () => {
           />
         </View>
 
-        {/* Tabs */}
+        {/* Tabs con contador */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -337,11 +390,28 @@ const MyReservationsScreen = () => {
               >
                 {tab.label}
               </Text>
+              {counts[tab.key] > 0 && (
+                <View
+                  style={[
+                    styles.tabBadge,
+                    activeTab === tab.key && styles.tabBadgeActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabBadgeText,
+                      activeTab === tab.key && styles.tabBadgeTextActive,
+                    ]}
+                  >
+                    {counts[tab.key]}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Lista de reservas */}
+        {/* Lista */}
         {loading ? (
           <ActivityIndicator
             color="#00A63E"
@@ -350,8 +420,17 @@ const MyReservationsScreen = () => {
           />
         ) : filtered.length === 0 ? (
           <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>Sin reservas</Text>
             <Text style={styles.emptyText}>
-              No hay reservas en esta categoría.
+              {activeTab === "todas"
+                ? "Aún no tienes ninguna reserva. ¡Crea tu primera reserva!"
+                : `No hay reservas ${
+                    activeTab === "activas"
+                      ? "activas"
+                      : activeTab === "pendientes"
+                      ? "pendientes"
+                      : "finalizadas o canceladas"
+                  }.`}
             </Text>
           </View>
         ) : (
@@ -365,7 +444,6 @@ const MyReservationsScreen = () => {
         )}
       </ScrollView>
 
-      {/* ── Footer ── */}
       <Footer />
     </SafeAreaView>
   );
@@ -393,11 +471,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   logoutIcon: { width: 20, height: 20, tintColor: "#4A5565" },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
-  },
+
+  scrollContent: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 24 },
+
   titleBlock: { marginBottom: 20 },
   mainTitle: {
     color: "#101828",
@@ -406,11 +482,16 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   subtitle: { color: "#4A5565", fontSize: 14, marginTop: 4 },
+
   newBtnWrapper: { marginBottom: 20 },
+
   tabsScroll: { marginBottom: 20 },
   tabsContainer: { flexDirection: "row", gap: 8 },
   tab: {
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: "#F3F4F6",
@@ -418,12 +499,33 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: "#00A63E" },
   tabText: { color: "#4A5565", fontSize: 13, fontWeight: "500" },
   tabTextActive: { color: "white", fontWeight: "700" },
+  tabBadge: {
+    backgroundColor: "#D1D5DB",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  tabBadgeActive: { backgroundColor: "rgba(255,255,255,0.3)" },
+  tabBadgeText: { color: "#374151", fontSize: 11, fontWeight: "700" },
+  tabBadgeTextActive: { color: "white" },
+
   emptyContainer: {
     alignItems: "center",
     marginTop: 60,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
   },
-  emptyText: { color: "#6A7282", fontSize: 15, textAlign: "center" },
+  emptyTitle: {
+    color: "#101828",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: "#6A7282",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 22,
+  },
 });
 
 export default MyReservationsScreen;

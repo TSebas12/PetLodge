@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import API_BASE_URL from "../config/api";
-
 const BackIcon = require("../../assets/IconoVolver.webp");
 
 const API_URL = API_BASE_URL;
@@ -34,6 +33,7 @@ interface Reservation {
     paseo: boolean;
     alimentacionEspecial: boolean;
   };
+  solicitudesEspeciales?: string;
   createdAt: string;
 }
 
@@ -52,30 +52,90 @@ const ESTADO_LABEL: Record<EstadoReserva, string> = {
   cancelada: "Cancelada",
 };
 
-const ESTADO_COLORS: Record<EstadoReserva, { bg: string; text: string }> = {
-  pendiente: { bg: "#FEF9C2", text: "#A65F00" },
-  activa: { bg: "#DCFCE7", text: "#008236" },
-  finalizada: { bg: "#E5E7EB", text: "#374151" },
-  cancelada: { bg: "#FEE2E2", text: "#B91C1C" },
+const ESTADO_COLORS: Record<
+  EstadoReserva,
+  { bg: string; text: string; border: string }
+> = {
+  pendiente: { bg: "#FEF9C2", text: "#A65F00", border: "#FCD34D" },
+  activa: { bg: "#DCFCE7", text: "#008236", border: "#86EFAC" },
+  finalizada: { bg: "#E5E7EB", text: "#374151", border: "#D1D5DB" },
+  cancelada: { bg: "#FEE2E2", text: "#B91C1C", border: "#FCA5A5" },
 };
 
-// ── Fila de detalle ───────────────────────────────────────────
-const DetailRow = ({ label, value }: { label: string; value: string }) => (
+// ── Sección con título ────────────────────────────────────────
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <View style={sectionStyles.container}>
+    <Text style={sectionStyles.title}>{title}</Text>
+    {children}
+  </View>
+);
+
+const sectionStyles = StyleSheet.create({
+  container: { gap: 10 },
+  title: { color: "#101828", fontSize: 14, fontWeight: "700", marginBottom: 2 },
+});
+
+// ── Fila de dato ──────────────────────────────────────────────
+const DataRow = ({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) => (
   <View style={rowStyles.container}>
     <Text style={rowStyles.label}>{label}</Text>
-    <Text style={rowStyles.value}>{value}</Text>
+    <Text style={[rowStyles.value, highlight && rowStyles.valueHighlight]}>
+      {value}
+    </Text>
   </View>
 );
 
 const rowStyles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
-    gap: 2,
   },
-  label: { color: "#6A7282", fontSize: 13 },
-  value: { color: "#101828", fontSize: 15, fontWeight: "600" },
+  label: { color: "#6A7282", fontSize: 13, flex: 1 },
+  value: {
+    color: "#101828",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "right",
+  },
+  valueHighlight: { color: "#00A63E" },
+});
+
+// ── Chip de servicio ──────────────────────────────────────────
+const ServiceChip = ({ label }: { label: string }) => (
+  <View style={chipStyles.chip}>
+    <Text style={chipStyles.text}>{label}</Text>
+  </View>
+);
+
+const chipStyles = StyleSheet.create({
+  chip: {
+    backgroundColor: "#DCFCE7",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  text: { color: "#008236", fontSize: 12, fontWeight: "600" },
 });
 
 // ── Pantalla ──────────────────────────────────────────────────
@@ -94,8 +154,8 @@ const ReservationDetailScreen = () => {
           setError("ID de reserva no encontrado.");
           return;
         }
-        const res = await axios.get(`${API_URL}/api/reservations/${id}`);
-        setReservation(res.data);
+        const { data } = await axios.get(`${API_URL}/api/reservations/${id}`);
+        setReservation(data);
       } catch {
         setError("No se pudo cargar el detalle de la reserva.");
       } finally {
@@ -105,16 +165,26 @@ const ReservationDetailScreen = () => {
     load();
   }, [id]);
 
-  // Texto de servicios adicionales
-  const getServiciosText = (r: Reservation): string => {
-    if (r.tipoHospedaje !== "especial") return "N/A (Hospedaje Estándar)";
+  // ── Servicios activos como array ──────────────────────────
+  const getServiciosActivos = (r: Reservation): string[] => {
+    if (r.tipoHospedaje !== "especial") return [];
     const s = r.serviciosAdicionales;
-    if (!s) return "Ninguno";
-    const activos: string[] = [];
-    if (s.bano) activos.push("Baño");
-    if (s.paseo) activos.push("Paseo");
-    if (s.alimentacionEspecial) activos.push("Alimentación Especial");
-    return activos.length ? activos.join(", ") : "Ninguno";
+    if (!s) return [];
+    const arr: string[] = [];
+    if (s.bano) arr.push("Baño");
+    if (s.paseo) arr.push("Paseo");
+    if (s.alimentacionEspecial) arr.push("Alimentación especial");
+    return arr;
+  };
+
+  // ── Calcular noches ───────────────────────────────────────
+  const getNights = (r: Reservation): number => {
+    const ing = new Date(r.fechaIngreso);
+    const sal = new Date(r.fechaSalida);
+    return Math.max(
+      0,
+      Math.round((sal.getTime() - ing.getTime()) / (1000 * 60 * 60 * 24)),
+    );
   };
 
   return (
@@ -128,13 +198,13 @@ const ReservationDetailScreen = () => {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Historial de Reservas</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Detalle de Reserva</Text>
+          <Text style={styles.headerSubtitle}>Todas tus reservas pasadas</Text>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={styles.headerSubtitle}>Todas tus reservas pasadas</Text>
-
-      {/* Contenido */}
       {loading ? (
         <ActivityIndicator
           color="#00A63E"
@@ -150,68 +220,117 @@ const ReservationDetailScreen = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.card}>
-            {/* Encabezado de la card */}
-            <View style={styles.cardHeader}>
-              <Text style={styles.reservaId}>
-                Reserva #{reservation._id.slice(-5).toUpperCase()}
-              </Text>
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: ESTADO_COLORS[reservation.estado].bg },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.badgeText,
-                    { color: ESTADO_COLORS[reservation.estado].text },
-                  ]}
-                >
-                  {ESTADO_LABEL[reservation.estado]}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.petName}>
-              Mascota: {reservation.petName} ({reservation.petType})
+          {/* ── Banner de Estado ── */}
+          <View
+            style={[
+              styles.statusBanner,
+              {
+                backgroundColor: ESTADO_COLORS[reservation.estado].bg,
+                borderColor: ESTADO_COLORS[reservation.estado].border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusBannerText,
+                { color: ESTADO_COLORS[reservation.estado].text },
+              ]}
+            >
+              Estado: {ESTADO_LABEL[reservation.estado]}
             </Text>
+            <Text
+              style={[
+                styles.statusBannerSub,
+                { color: ESTADO_COLORS[reservation.estado].text },
+              ]}
+            >
+              Reserva #{reservation._id.slice(-5).toUpperCase()}
+            </Text>
+          </View>
 
-            {/* Detalles */}
-            <View style={styles.detailsBlock}>
-              <DetailRow
+          {/* ── Card principal ── */}
+          <View style={styles.card}>
+            {/* ── Sección: Mascota ── */}
+            <Section title="🐾 Mascota">
+              <DataRow label="Nombre:" value={reservation.petName} />
+              <DataRow label="Tipo:" value={reservation.petType} />
+            </Section>
+
+            <View style={styles.divider} />
+
+            {/* ── Sección: Fechas y Habitación ── */}
+            <Section title="📅 Fechas y Habitación">
+              <DataRow
                 label="Ingreso:"
                 value={formatDate(reservation.fechaIngreso)}
               />
-              <DetailRow
+              <DataRow
                 label="Salida:"
                 value={formatDate(reservation.fechaSalida)}
               />
-              <DetailRow
+              <DataRow
+                label="Noches:"
+                value={`${getNights(reservation)} noches`}
+              />
+              <DataRow
                 label="Habitación:"
                 value={String(reservation.numeroHabitacion)}
+                highlight
               />
-              <DetailRow
-                label="Tipo:"
+              <DataRow
+                label="Tipo de hospedaje:"
                 value={
                   reservation.tipoHospedaje === "especial"
                     ? "Especial"
                     : "Estándar"
                 }
               />
-              <DetailRow
-                label="Servicios adicionales:"
-                value={getServiciosText(reservation)}
-              />
-              <DetailRow
-                label="Estado:"
-                value={ESTADO_LABEL[reservation.estado]}
-              />
-              <DetailRow
+            </Section>
+
+            <View style={styles.divider} />
+
+            {/* ── Sección: Servicios Adicionales ── */}
+            <Section title="✨ Servicios Adicionales">
+              {reservation.tipoHospedaje !== "especial" ? (
+                <Text style={styles.noServicesText}>
+                  No aplica — Hospedaje Estándar
+                </Text>
+              ) : getServiciosActivos(reservation).length === 0 ? (
+                <Text style={styles.noServicesText}>Ninguno contratado</Text>
+              ) : (
+                <View style={styles.chipsRow}>
+                  {getServiciosActivos(reservation).map((s) => (
+                    <ServiceChip key={s} label={s} />
+                  ))}
+                </View>
+              )}
+            </Section>
+
+            {/* ── Solicitudes especiales (si existen) ── */}
+            {reservation.solicitudesEspeciales ? (
+              <>
+                <View style={styles.divider} />
+                <Section title="📝 Solicitudes Especiales">
+                  <Text style={styles.notesText}>
+                    {reservation.solicitudesEspeciales}
+                  </Text>
+                </Section>
+              </>
+            ) : null}
+
+            <View style={styles.divider} />
+
+            {/* ── Sección: Info de la solicitud ── */}
+            <Section title="ℹ️ Información de Solicitud">
+              <DataRow
                 label="Fecha de solicitud:"
                 value={formatDate(reservation.createdAt)}
               />
-            </View>
+              <DataRow
+                label="Estado actual:"
+                value={ESTADO_LABEL[reservation.estado]}
+              />
+            </Section>
           </View>
         </ScrollView>
       ) : null}
@@ -221,6 +340,7 @@ const ReservationDetailScreen = () => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F9FAFB" },
+
   header: {
     backgroundColor: "white",
     paddingHorizontal: 16,
@@ -232,19 +352,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E5E7EB",
   },
   backIcon: { width: 24, height: 24, tintColor: "#101828" },
+  headerCenter: { alignItems: "center", flex: 1 },
   headerTitle: { color: "#101828", fontSize: 18, fontWeight: "700" },
-  headerSubtitle: {
-    color: "#4A5565",
-    fontSize: 13,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
+  headerSubtitle: { color: "#4A5565", fontSize: 12, marginTop: 2 },
+
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
+    gap: 16,
   },
+
   errorBox: {
     margin: 24,
     padding: 16,
@@ -252,10 +370,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   errorText: { color: "#B91C1C", fontSize: 14 },
+
+  // Banner de estado
+  statusBanner: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    gap: 4,
+  },
+  statusBannerText: { fontSize: 16, fontWeight: "700" },
+  statusBannerSub: { fontSize: 13, opacity: 0.8 },
+
+  // Card principal
   card: {
     backgroundColor: "white",
-    borderRadius: 14,
-    padding: 18,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     elevation: 2,
@@ -263,18 +393,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
-    gap: 12,
+    gap: 16,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  reservaId: { color: "#101828", fontSize: 17, fontWeight: "700" },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 12, fontWeight: "600" },
-  petName: { color: "#4A5565", fontSize: 14 },
-  detailsBlock: {},
+  divider: { height: 1, backgroundColor: "#E5E7EB" },
+
+  noServicesText: { color: "#9CA3AF", fontSize: 13, fontStyle: "italic" },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  notesText: { color: "#374151", fontSize: 13, lineHeight: 20 },
 });
 
 export default ReservationDetailScreen;
