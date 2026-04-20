@@ -1,10 +1,18 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -63,31 +71,79 @@ const DateInput = ({
   label,
   value,
   onChange,
+  onPressIcon,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-}) => (
-  <View style={styles.fieldGroup}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    <View style={styles.dateInputWrapper}>
-      <Image
-        source={CalendarIcon}
-        style={styles.dateIcon}
-        resizeMode="contain"
-      />
-      <TextInput
-        style={styles.dateInput}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor="#9CA3AF"
-        value={value}
-        onChangeText={onChange}
-        keyboardType="default"
-        autoCapitalize="none"
-      />
+  onPressIcon: () => void;
+}) => {
+  const webInputRef = useRef<any>(null); // Tipado como 'any' para evitar errores de TS
+
+  const handleIconClick = () => {
+    if (Platform.OS === "web") {
+      const input = webInputRef.current;
+      if (input) {
+        // Intentamos abrir el calendario nativo
+        if (typeof input.showPicker === "function") {
+          input.showPicker();
+        } else {
+          input.focus();
+        }
+      }
+    } else {
+      onPressIcon();
+    }
+  };
+
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.dateInputWrapper}>
+        <TouchableOpacity onPress={handleIconClick} style={{ padding: 5 }}>
+          <Image
+            source={CalendarIcon}
+            style={styles.dateIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+
+        {Platform.OS === "web" ? (
+          <input
+            ref={webInputRef}
+            type="date"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{
+              flex: 1,
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              fontSize: 14,
+              color: "#101828",
+              fontFamily: "inherit",
+              height: 40,
+              paddingLeft: 8,
+              cursor: "text",
+              appearance: "none",
+              WebkitAppearance: "none",
+            }}
+          />
+        ) : (
+          <TextInput
+            style={styles.dateInput}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#9CA3AF"
+            value={value}
+            onChangeText={onChange}
+            keyboardType="default"
+            autoCapitalize="none"
+          />
+        )}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const DropdownField = ({
   label,
@@ -222,6 +278,36 @@ const NewReservationScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEditing = !!id;
+  const [fechaIngreso, setFechaIngreso] = useState("");
+  const [fechaSalida, setFechaSalida] = useState("");
+  const [notas, setNotas] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"ingreso" | "salida">("ingreso");
+
+  const openDatePicker = (mode: "ingreso" | "salida") => {
+    setPickerMode(mode);
+    setShowPicker(true);
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/pets" as any);
+    }
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowPicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const formattedDate = selectedDate.toISOString().split("T")[0];
+      if (pickerMode === "ingreso") {
+        setFormData((p) => ({ ...p, checkIn: formattedDate }));
+      } else {
+        setFormData((p) => ({ ...p, checkOut: formattedDate }));
+      }
+    }
+  };
 
   const [userId, setUserId] = useState<string | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
@@ -567,326 +653,350 @@ const NewReservationScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-          style={styles.backBtn}
-        >
-          <Image
-            source={IconoVolver}
-            style={styles.backIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-
-        <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>
-            {isEditing ? "Modificar Reserva" : "Registro de Reserva"}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {isEditing
-              ? `Actualiza la reserva #${String(id).slice(-5).toUpperCase()}`
-              : "Completa la información para crear una nueva reserva"}
-          </Text>
-        </View>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Información de la Reserva</Text>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleBack}
+            activeOpacity={0.7}
+            style={styles.backBtn}
+          >
+            <Image
+              source={IconoVolver}
+              style={styles.backIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Mascota</Text>
-            {loadingPets ? (
-              <ActivityIndicator
-                color="#00A63E"
-                style={{ marginVertical: 8 }}
-              />
-            ) : pets.length === 0 ? (
-              <View style={styles.noPetsBox}>
-                <Text style={styles.noPetsText}>
-                  No tienes mascotas registradas.
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => router.push("/(auth)/registerPet" as any)}
-                >
-                  <Text style={styles.noPetsLink}>Registrar mascota →</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.petPickerContainer}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setFormData((p) => ({ ...p, petId: "" }))}
-                  style={[
-                    styles.petOption,
-                    formData.petId === "" && styles.petOptionPlaceholder,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.petOptionText,
-                      formData.petId === "" && styles.petOptionTextPlaceholder,
-                    ]}
-                  >
-                    Seleccionar mascota
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>
+              {isEditing ? "Modificar Reserva" : "Registro de Reserva"}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {isEditing
+                ? `Actualiza la reserva #${String(id).slice(-5).toUpperCase()}`
+                : "Completa la información para crear una nueva reserva"}
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formCard}>
+            <Text style={styles.sectionTitle}>Información de la Reserva</Text>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Mascota</Text>
+              {loadingPets ? (
+                <ActivityIndicator
+                  color="#00A63E"
+                  style={{ marginVertical: 8 }}
+                />
+              ) : pets.length === 0 ? (
+                <View style={styles.noPetsBox}>
+                  <Text style={styles.noPetsText}>
+                    No tienes mascotas registradas.
                   </Text>
-                </TouchableOpacity>
-
-                {pets.map((pet) => (
                   <TouchableOpacity
-                    key={pet._id}
                     activeOpacity={0.7}
-                    onPress={() =>
-                      setFormData((p) => ({ ...p, petId: pet._id }))
-                    }
+                    onPress={() => router.push("/(auth)/registerPet" as any)}
+                  >
+                    <Text style={styles.noPetsLink}>Registrar mascota →</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.petPickerContainer}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setFormData((p) => ({ ...p, petId: "" }))}
                     style={[
                       styles.petOption,
-                      formData.petId === pet._id && styles.petOptionActive,
+                      formData.petId === "" && styles.petOptionPlaceholder,
                     ]}
                   >
                     <Text
                       style={[
                         styles.petOptionText,
-                        formData.petId === pet._id &&
-                          styles.petOptionTextActive,
+                        formData.petId === "" &&
+                          styles.petOptionTextPlaceholder,
                       ]}
                     >
-                      {pet.nombre} ({pet.tipo})
+                      Seleccionar mascota
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
 
-          <View style={styles.datesColumn}>
-            <DateInput
-              label="Fecha de Ingreso"
-              value={formData.checkIn}
-              onChange={(v) => setFormData((p) => ({ ...p, checkIn: v }))}
-            />
-
-            <DateInput
-              label="Fecha de Salida"
-              value={formData.checkOut}
-              onChange={(v) => setFormData((p) => ({ ...p, checkOut: v }))}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Número de Habitación</Text>
-            <Text style={styles.fieldHint}>
-              El sistema asignará automáticamente según disponibilidad.
-            </Text>
-
-            <View style={styles.autoRoomInput}>
-              <Text
-                style={[
-                  styles.autoRoomText,
-                  !formData.room && styles.autoRoomPlaceholder,
-                ]}
-              >
-                {formData.room
-                  ? `Habitación ${formData.room}`
-                  : "Asignado automáticamente"}
-              </Text>
-            </View>
-
-            {indic && (
-              <View style={[styles.availBadge, { backgroundColor: indic.bg }]}>
-                <Text style={[styles.availBadgeText, { color: indic.color }]}>
-                  {indic.icon} {availMessage}
-                </Text>
-                {availStatus === "checking" && (
-                  <ActivityIndicator
-                    size="small"
-                    color={indic.color}
-                    style={{ marginLeft: 6 }}
-                  />
-                )}
-              </View>
-            )}
-          </View>
-
-          <DropdownField
-            label="Tipo de Hospedaje"
-            placeholder="Seleccionar tipo"
-            options={["Estándar", "Especial"]}
-            value={formData.roomType}
-            onSelect={(v) =>
-              setFormData((p) => ({
-                ...p,
-                roomType: v,
-                additionalServices:
-                  v === "Estándar" ? [] : p.additionalServices,
-              }))
-            }
-          />
-
-          {formData.roomType === "Especial" && (
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Servicios Adicionales</Text>
-              <Text style={styles.fieldHint}>
-                Solo disponibles en hospedaje de tipo Especial.
-              </Text>
-
-              <View style={styles.checkboxList}>
-                {ADDITIONAL_SERVICES.map((service) => {
-                  const checked = formData.additionalServices.includes(service);
-
-                  return (
+                  {pets.map((pet) => (
                     <TouchableOpacity
-                      key={service}
+                      key={pet._id}
                       activeOpacity={0.7}
-                      onPress={() => toggleService(service)}
-                      style={styles.checkboxRow}
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          checked && styles.checkboxChecked,
-                        ]}
-                      >
-                        {checked && <Text style={styles.checkboxTick}>✓</Text>}
-                      </View>
-                      <Text style={styles.checkboxLabel}>{service}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Solicitudes Especiales</Text>
-            <TextInput
-              style={styles.textarea}
-              placeholder="Ej: Necesita medicación, alergias, comportamiento especial..."
-              placeholderTextColor="#9CA3AF"
-              value={formData.specialRequests}
-              onChangeText={(v) =>
-                setFormData((p) => ({ ...p, specialRequests: v }))
-              }
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-          </View>
-
-          <View style={styles.calendarBox}>
-            <Text style={styles.calendarTitle}>
-              Calendario de Disponibilidad
-            </Text>
-            <Text style={styles.calendarSubtitle}>
-              El sistema verificará la disponibilidad de habitaciones para las
-              fechas seleccionadas.
-            </Text>
-
-            <Text style={styles.calendarMonthLabel}>
-              {calendarData.monthLabel.charAt(0).toUpperCase() +
-                calendarData.monthLabel.slice(1)}
-            </Text>
-
-            {loadingCalendar ? (
-              <ActivityIndicator
-                color="#2563EB"
-                style={{ marginVertical: 12 }}
-              />
-            ) : (
-              <View style={styles.calendarGrid}>
-                {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
-                  <View key={`h-${i}`} style={styles.calCell}>
-                    <Text style={styles.calDayHeader}>{d}</Text>
-                  </View>
-                ))}
-
-                {calendarData.cells.map((cell, i) => {
-                  if (cell.type === "empty") {
-                    return <View key={`empty-${i}`} style={styles.calCell} />;
-                  }
-
-                  const isOccupied = cell.isAvailable === false;
-                  const isFree = cell.isAvailable === true;
-
-                  return (
-                    <View
-                      key={cell.isoDate}
+                      onPress={() =>
+                        setFormData((p) => ({ ...p, petId: pet._id }))
+                      }
                       style={[
-                        styles.calCell,
-                        isOccupied
-                          ? styles.calCellOccupied
-                          : cell.isWeekend
-                          ? styles.calCellWeekend
-                          : isFree
-                          ? styles.calCellFree
-                          : styles.calCellNeutral,
-                        cell.isToday && styles.calCellToday,
+                        styles.petOption,
+                        formData.petId === pet._id && styles.petOptionActive,
                       ]}
                     >
                       <Text
                         style={[
-                          styles.calDayText,
-                          isOccupied
-                            ? styles.calTextOccupied
-                            : cell.isWeekend
-                            ? styles.calTextWeekend
-                            : isFree
-                            ? styles.calTextFree
-                            : styles.calTextNeutral,
-                          cell.isToday && styles.calTextToday,
+                          styles.petOptionText,
+                          formData.petId === pet._id &&
+                            styles.petOptionTextActive,
                         ]}
                       >
-                        {cell.value}
+                        {pet.nombre} ({pet.tipo})
                       </Text>
-                    </View>
-                  );
-                })}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.datesColumn}>
+              <DateInput
+                label="Fecha de Ingreso"
+                value={formData.checkIn}
+                onChange={(v) => setFormData((p) => ({ ...p, checkIn: v }))}
+                onPressIcon={() => openDatePicker("ingreso")}
+              />
+
+              <DateInput
+                label="Fecha de Salida"
+                value={formData.checkOut}
+                onChange={(v) => setFormData((p) => ({ ...p, checkOut: v }))}
+                onPressIcon={() => openDatePicker("salida")}
+              />
+            </View>
+
+            {showPicker &&
+              (Platform.OS === "web" ? null : (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={onDateChange}
+                  minimumDate={new Date()}
+                />
+              ))}
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Número de Habitación</Text>
+              <Text style={styles.fieldHint}>
+                El sistema asignará automáticamente según disponibilidad.
+              </Text>
+
+              <View style={styles.autoRoomInput}>
+                <Text
+                  style={[
+                    styles.autoRoomText,
+                    !formData.room && styles.autoRoomPlaceholder,
+                  ]}
+                >
+                  {formData.room
+                    ? `Habitación ${formData.room}`
+                    : "Asignado automáticamente"}
+                </Text>
+              </View>
+
+              {indic && (
+                <View
+                  style={[styles.availBadge, { backgroundColor: indic.bg }]}
+                >
+                  <Text style={[styles.availBadgeText, { color: indic.color }]}>
+                    {indic.icon} {availMessage}
+                  </Text>
+                  {availStatus === "checking" && (
+                    <ActivityIndicator
+                      size="small"
+                      color={indic.color}
+                      style={{ marginLeft: 6 }}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
+
+            <DropdownField
+              label="Tipo de Hospedaje"
+              placeholder="Seleccionar tipo"
+              options={["Estándar", "Especial"]}
+              value={formData.roomType}
+              onSelect={(v) =>
+                setFormData((p) => ({
+                  ...p,
+                  roomType: v,
+                  additionalServices:
+                    v === "Estándar" ? [] : p.additionalServices,
+                }))
+              }
+            />
+
+            {formData.roomType === "Especial" && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Servicios Adicionales</Text>
+                <Text style={styles.fieldHint}>
+                  Solo disponibles en hospedaje de tipo Especial.
+                </Text>
+
+                <View style={styles.checkboxList}>
+                  {ADDITIONAL_SERVICES.map((service) => {
+                    const checked =
+                      formData.additionalServices.includes(service);
+
+                    return (
+                      <TouchableOpacity
+                        key={service}
+                        activeOpacity={0.7}
+                        onPress={() => toggleService(service)}
+                        style={styles.checkboxRow}
+                      >
+                        <View
+                          style={[
+                            styles.checkbox,
+                            checked && styles.checkboxChecked,
+                          ]}
+                        >
+                          {checked && (
+                            <Text style={styles.checkboxTick}>✓</Text>
+                          )}
+                        </View>
+                        <Text style={styles.checkboxLabel}>{service}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             )}
 
-            <View style={styles.legend}>
-              {[
-                { color: "#86EFAC", label: "Disponible" },
-                { color: "#FCA5A5", label: "No disponible" },
-                { color: "#D1D5DB", label: "Fin de semana" },
-                { color: "#DBEAFE", label: "Hoy" },
-              ].map((l) => (
-                <View key={l.label} style={styles.legendItem}>
-                  <View
-                    style={[styles.legendDot, { backgroundColor: l.color }]}
-                  />
-                  <Text style={styles.legendText}>{l.label}</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Solicitudes Especiales</Text>
+              <TextInput
+                style={styles.textarea}
+                placeholder="Ej: Necesita medicación, alergias, comportamiento especial..."
+                placeholderTextColor="#9CA3AF"
+                value={formData.specialRequests}
+                onChangeText={(v) =>
+                  setFormData((p) => ({ ...p, specialRequests: v }))
+                }
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.calendarBox}>
+              <Text style={styles.calendarTitle}>
+                Calendario de Disponibilidad
+              </Text>
+              <Text style={styles.calendarSubtitle}>
+                El sistema verificará la disponibilidad de habitaciones para las
+                fechas seleccionadas.
+              </Text>
+
+              <Text style={styles.calendarMonthLabel}>
+                {calendarData.monthLabel.charAt(0).toUpperCase() +
+                  calendarData.monthLabel.slice(1)}
+              </Text>
+
+              {loadingCalendar ? (
+                <ActivityIndicator
+                  color="#2563EB"
+                  style={{ marginVertical: 12 }}
+                />
+              ) : (
+                <View style={styles.calendarGrid}>
+                  {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+                    <View key={`h-${i}`} style={styles.calCell}>
+                      <Text style={styles.calDayHeader}>{d}</Text>
+                    </View>
+                  ))}
+
+                  {calendarData.cells.map((cell, i) => {
+                    if (cell.type === "empty") {
+                      return <View key={`empty-${i}`} style={styles.calCell} />;
+                    }
+
+                    const isOccupied = cell.isAvailable === false;
+                    const isFree = cell.isAvailable === true;
+
+                    return (
+                      <View
+                        key={cell.isoDate}
+                        style={[
+                          styles.calCell,
+                          isOccupied
+                            ? styles.calCellOccupied
+                            : cell.isWeekend
+                            ? styles.calCellWeekend
+                            : isFree
+                            ? styles.calCellFree
+                            : styles.calCellNeutral,
+                          cell.isToday && styles.calCellToday,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.calDayText,
+                            isOccupied
+                              ? styles.calTextOccupied
+                              : cell.isWeekend
+                              ? styles.calTextWeekend
+                              : isFree
+                              ? styles.calTextFree
+                              : styles.calTextNeutral,
+                            cell.isToday && styles.calTextToday,
+                          ]}
+                        >
+                          {cell.value}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
-              ))}
+              )}
+
+              <View style={styles.legend}>
+                {[
+                  { color: "#86EFAC", label: "Disponible" },
+                  { color: "#FCA5A5", label: "No disponible" },
+                  { color: "#D1D5DB", label: "Fin de semana" },
+                  { color: "#DBEAFE", label: "Hoy" },
+                ].map((l) => (
+                  <View key={l.label} style={styles.legendItem}>
+                    <View
+                      style={[styles.legendDot, { backgroundColor: l.color }]}
+                    />
+                    <Text style={styles.legendText}>{l.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.buttonsRow}>
+              <View style={{ flex: 1 }}>
+                <CustomButton
+                  title="Cancelar"
+                  type="danger"
+                  onPress={handleBack}
+                />
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <CustomButton
+                  title={isEditing ? "Guardar Cambios" : "Confirmar Reserva"}
+                  type="primary"
+                  onPress={handleSubmit}
+                />
+              </View>
             </View>
           </View>
-
-          <View style={styles.buttonsRow}>
-            <View style={{ flex: 1 }}>
-              <CustomButton
-                title="Cancelar"
-                type="danger"
-                onPress={() => router.back()}
-              />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <CustomButton
-                title={isEditing ? "Guardar Cambios" : "Confirmar Reserva"}
-                type="primary"
-                onPress={handleSubmit}
-              />
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <LoadingModal visible={loading} />
 

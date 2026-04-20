@@ -70,7 +70,8 @@ const MyPetsCard = ({ ownerId }: MyPetsCardProps) => {
               key={pet._id}
               name={pet.nombre}
               breed={pet.raza || pet.tipo}
-              status="Activo" // O podrías basarlo en alguna lógica de vacunas
+              status="Activo"
+              image={pet.foto}
             />
           ))
         ) : (

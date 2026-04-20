@@ -3,7 +3,9 @@ import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -37,7 +39,6 @@ const LoginScreen = () => {
     icon: IconoAlerta,
   });
 
-  // --- BLOQUE DE PERSISTENCIA ---
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -49,16 +50,14 @@ const LoginScreen = () => {
         }
 
         if (session) {
-          router.replace("/home" as any);
+          router.replace("/home");
         }
       } catch (error) {
         console.error("Error comprobando sesión persistente:", error);
       }
     };
-
     checkSession();
   }, []);
-  // ----------------------------------------------------
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -75,8 +74,6 @@ const LoginScreen = () => {
 
     try {
       const API_URL = `${API_BASE_URL}/api/users/login`;
-      console.log("Login request URL:", API_URL);
-
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,35 +88,19 @@ const LoginScreen = () => {
       try {
         data = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
-        data = {
-          message: `Servidor respondió con texto no JSON: ${responseText}`,
-        };
+        data = { message: "Error en la respuesta del servidor." };
       }
 
-      if (response.ok) {
-        if (data.user) {
-          try {
-            if (Platform.OS === "web") {
-              localStorage.setItem("userSession", JSON.stringify(data.user));
-              console.log("LOGIN EXITOSO: Guardado en localStorage (Web)");
-            } else {
-              await SecureStore.setItemAsync(
-                "userSession",
-                JSON.stringify(data.user),
-              );
-              console.log("LOGIN EXITOSO: Guardado en SecureStore (Móvil)");
-            }
-          } catch (storageError) {
-            console.warn(
-              "Error al persistir sesión, pero continuando...",
-              storageError,
-            );
-          }
-
-          router.replace("/home" as any);
+      if (response.ok && data.user) {
+        if (Platform.OS === "web") {
+          localStorage.setItem("userSession", JSON.stringify(data.user));
         } else {
-          throw new Error("Datos de usuario no recibidos.");
+          await SecureStore.setItemAsync(
+            "userSession",
+            JSON.stringify(data.user),
+          );
         }
+        router.replace("/home");
       } else {
         setModalData({
           title: "Acceso Denegado",
@@ -128,15 +109,10 @@ const LoginScreen = () => {
         });
         setShowErrorModal(true);
       }
-    } catch (error: any) {
-      console.error("ERROR DETALLADO EN LOGIN:", error.message);
-
+    } catch (error) {
       setModalData({
         title: "Error de Conexión",
-        subtitle:
-          Platform.OS === "web"
-            ? "No se pudo conectar al servidor local. Verifica que el backend esté corriendo y el CORS habilitado."
-            : "No pudimos conectar con el servidor. Revisa tu IP local.",
+        subtitle: "No pudimos conectar con el servidor.",
         icon: IconoX,
       });
       setShowErrorModal(true);
@@ -144,8 +120,9 @@ const LoginScreen = () => {
       setLoading(false);
     }
   };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <LoadingModal visible={loading} message="Validando credenciales..." />
 
       <SingleBtnModal
@@ -156,58 +133,74 @@ const LoginScreen = () => {
         onConfirm={() => setShowErrorModal(false)}
       />
 
-      <View style={styles.card}>
-        <View style={styles.iconContainer}>
-          <Image source={Logo} style={styles.logo} resizeMode="contain" />
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <Image source={Logo} style={styles.logo} resizeMode="contain" />
+            </View>
 
-        <Text style={styles.title}>Bienvenido a PetLodge</Text>
-        <Text style={styles.subtitle}>
-          Tu solución para el cuidado de mascotas
-        </Text>
+            <Text style={styles.title}>Bienvenido a PetLodge</Text>
+            <Text style={styles.subtitle}>
+              Tu solución para el cuidado de mascotas
+            </Text>
 
-        <CustomInput
-          label="Correo Electrónico"
-          placeholder="Ingrese su correo electrónico"
-          icon={MailIcon}
-          value={email}
-          onChangeText={setEmail}
-        />
+            <CustomInput
+              label="Correo Electrónico"
+              placeholder="Ingrese su correo electrónico"
+              icon={MailIcon}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
 
-        <CustomInput
-          label="Contraseña"
-          placeholder="Ingrese su contraseña"
-          isPassword
-          icon={LockIcon}
-          value={password}
-          onChangeText={setPassword}
-        />
+            <CustomInput
+              label="Contraseña"
+              placeholder="Ingrese su contraseña"
+              isPassword
+              icon={LockIcon}
+              value={password}
+              onChangeText={setPassword}
+            />
 
-        <CustomButton title="Iniciar Sesión" onPress={handleLogin} />
+            <View style={styles.buttonWrapper}>
+              <CustomButton title="Iniciar Sesión" onPress={handleLogin} />
+            </View>
 
-        <TouchableOpacity style={styles.forgotButton}>
-          <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.forgotButton}>
+              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
 
-        <View style={styles.divider}>
-          <CustomButton
-            title="Registrarse"
-            onPress={() => router.push("/register")}
-            type="secondary"
-          />
-        </View>
-      </View>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>¿No tienes una cuenta? </Text>
+              <TouchableOpacity onPress={() => router.push("/register")}>
+                <Text style={styles.linkText}>Regístrate</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-// ... (los estilos se mantienen igual)
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#F0FDF4", // Verde muy claro igual que Register
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 40,
     paddingHorizontal: 16,
   },
   card: {
@@ -216,21 +209,19 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     padding: 32,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 15,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 30,
-    elevation: 10,
     alignItems: "center",
+    // Sombras consistentes
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   iconContainer: {
     width: 80,
     height: 80,
     backgroundColor: "#DCFCE7",
-    borderRadius: 999,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
@@ -255,20 +246,32 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
   },
+  buttonWrapper: {
+    width: "100%",
+    marginTop: 16,
+  },
   forgotButton: {
-    marginTop: 24,
-    marginBottom: 32,
+    marginTop: 16,
   },
   forgotText: {
     color: "#4A5565",
     fontSize: 14,
     fontWeight: "400",
   },
-  divider: {
-    width: "100%",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 24,
+  footer: {
+    flexDirection: "row",
+    marginTop: 32,
+    justifyContent: "center",
+  },
+  footerText: {
+    color: "#4A5565",
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  linkText: {
+    color: "#155DFC",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 

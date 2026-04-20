@@ -251,7 +251,7 @@ const ReservationDetailScreen = () => {
           {/* ── Card principal ── */}
           <View style={styles.card}>
             {/* ── Sección: Mascota ── */}
-            <Section title="🐾 Mascota">
+            <Section title="Mascota">
               <DataRow label="Nombre:" value={reservation.petName} />
               <DataRow label="Tipo:" value={reservation.petType} />
             </Section>
@@ -259,7 +259,7 @@ const ReservationDetailScreen = () => {
             <View style={styles.divider} />
 
             {/* ── Sección: Fechas y Habitación ── */}
-            <Section title="📅 Fechas y Habitación">
+            <Section title="Fechas y Habitación">
               <DataRow
                 label="Ingreso:"
                 value={formatDate(reservation.fechaIngreso)}
@@ -290,7 +290,7 @@ const ReservationDetailScreen = () => {
             <View style={styles.divider} />
 
             {/* ── Sección: Servicios Adicionales ── */}
-            <Section title="✨ Servicios Adicionales">
+            <Section title="Servicios Adicionales">
               {reservation.tipoHospedaje !== "especial" ? (
                 <Text style={styles.noServicesText}>
                   No aplica — Hospedaje Estándar
@@ -310,7 +310,7 @@ const ReservationDetailScreen = () => {
             {reservation.solicitudesEspeciales ? (
               <>
                 <View style={styles.divider} />
-                <Section title="📝 Solicitudes Especiales">
+                <Section title="Solicitudes Especiales">
                   <Text style={styles.notesText}>
                     {reservation.solicitudesEspeciales}
                   </Text>
@@ -321,7 +321,7 @@ const ReservationDetailScreen = () => {
             <View style={styles.divider} />
 
             {/* ── Sección: Info de la solicitud ── */}
-            <Section title="ℹ️ Información de Solicitud">
+            <Section title="Información de Solicitud">
               <DataRow
                 label="Fecha de solicitud:"
                 value={formatDate(reservation.createdAt)}

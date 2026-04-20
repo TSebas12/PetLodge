@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import API_BASE_URL from "../config/api";
+
 // Componentes
 import CustomButton from "../components/CustomButton";
 import CustomInput from "../components/CustomInput";
@@ -20,7 +22,7 @@ import DoubleBtnModal from "../components/modals/DoubleBtnModal";
 import LoadingModal from "../components/modals/LoadingModal";
 import SingleBtnModal from "../components/modals/SingleBtnModal";
 
-// Activos
+// ... (tus imports de activos y regex se mantienen igual)
 const Logo = require("../../assets/LogoPetLodge.webp");
 const LogoutIcon = require("../../assets/IconoSalida.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
@@ -32,7 +34,6 @@ const CheckIcon = require("../../assets/IconoCheck.webp");
 const AlertIcon = require("../../assets/IconoAlerta.webp");
 const IconoX = require("../../assets/IconoX.webp");
 
-// Expresiones regulares para validación
 const phoneRegex = /^[0-9]{8}$/;
 const cedulaRegex = /^[0-9]{9}$/;
 const emailRegex = /\S+@\S+\.\S+/;
@@ -43,12 +44,10 @@ const EditProfileScreen = () => {
   const [isMounted, setIsMounted] = useState(false);
   const [userData, setUserData] = useState<any>(null);
 
-  // Estados para Modales
   const [isLoading, setIsLoading] = useState(false);
   const [modalSuccess, setModalSuccess] = useState(false);
   const [modalCancelVisible, setModalCancelVisible] = useState(false);
 
-  // Estado para errores de validación y servidor
   const [errorModal, setErrorModal] = useState({
     visible: false,
     title: "",
@@ -120,7 +119,6 @@ const EditProfileScreen = () => {
   };
 
   const handleSaveChanges = async () => {
-    // --- 1. VALIDACIONES DE FORMATO ---
     if (!form.fullName || !form.cedula || !form.email || !form.phone) {
       setErrorModal({
         visible: true,
@@ -162,23 +160,22 @@ const EditProfileScreen = () => {
       return;
     }
 
-    // --- 2. ENVÍO AL SERVIDOR ---
     setIsLoading(true);
     const startTime = Date.now();
 
     try {
-      const API_URL = API_BASE_URL;
-
-      const response = await fetch(`${API_URL}/api/users/${userData._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/users/${userData._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        },
+      );
 
       const data = await response.json();
 
       if (response.ok) {
-        // Actualizar sesión local
         const updatedSession = { ...userData, ...data.user };
         if (Platform.OS === "web") {
           localStorage.setItem("userSession", JSON.stringify(updatedSession));
@@ -188,10 +185,8 @@ const EditProfileScreen = () => {
             JSON.stringify(updatedSession),
           );
         }
-
         setUserData(updatedSession);
 
-        // Delay estético para el loader
         const duration = Date.now() - startTime;
         if (duration < 1200) {
           await new Promise((resolve) => setTimeout(resolve, 1200 - duration));
@@ -201,7 +196,6 @@ const EditProfileScreen = () => {
         setIsEditing(false);
         setModalSuccess(true);
       } else {
-        // Error del backend (Cédula o Email duplicados, etc.)
         setIsLoading(false);
         setErrorModal({
           visible: true,
@@ -211,12 +205,11 @@ const EditProfileScreen = () => {
         });
       }
     } catch (error) {
-      console.error("Error al guardar:", error);
       setIsLoading(false);
       setErrorModal({
         visible: true,
         title: "Error de red",
-        subtitle: "No se pudo conectar con el servidor. Revisa tu conexión.",
+        subtitle: "No se pudo conectar con el servidor.",
         icon: IconoX,
       });
     }
@@ -244,91 +237,99 @@ const EditProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      {/* 1. Envolvemos el ScrollView con KeyboardAvoidingView */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View style={styles.titleContainer}>
-          <Text style={styles.mainTitle}>
-            {isEditing ? "Editar Perfil" : "Mi Perfil"}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isEditing
-              ? "Modifica tus datos"
-              : "Información personal registrada"}
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.inputGroup}>
-            <CustomInput
-              label="Nombre Completo"
-              value={form.fullName}
-              onChangeText={(t) => handleInputChange("fullName", t)}
-              icon={UserIcon}
-              editable={isEditing}
-            />
-            <CustomInput
-              label="Cédula"
-              value={form.cedula}
-              onChangeText={(t) => handleInputChange("cedula", t)}
-              icon={IdIcon}
-              editable={isEditing}
-              keyboardType="numeric"
-            />
-            <CustomInput
-              label="Correo Electrónico"
-              value={form.email}
-              onChangeText={(t) => handleInputChange("email", t)}
-              icon={MailIcon}
-              editable={isEditing}
-              keyboardType="email-address"
-            />
-            <CustomInput
-              label="Teléfono"
-              value={form.phone}
-              onChangeText={(t) => handleInputChange("phone", t)}
-              icon={PhoneIcon}
-              editable={isEditing}
-              keyboardType="phone-pad"
-            />
-            <CustomInput
-              label="Dirección"
-              value={form.address}
-              onChangeText={(t) => handleInputChange("address", t)}
-              icon={MapIcon}
-              editable={isEditing}
-            />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.titleContainer}>
+            <Text style={styles.mainTitle}>
+              {isEditing ? "Editar Perfil" : "Mi Perfil"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isEditing
+                ? "Modifica tus datos"
+                : "Información personal registrada"}
+            </Text>
           </View>
 
-          <View style={styles.buttonSection}>
-            {!isEditing ? (
-              <CustomButton
-                title="Editar Perfil"
-                onPress={() => setIsEditing(true)}
+          <View style={styles.card}>
+            <View style={styles.inputGroup}>
+              <CustomInput
+                label="Nombre Completo"
+                value={form.fullName}
+                onChangeText={(t) => handleInputChange("fullName", t)}
+                icon={UserIcon}
+                editable={isEditing}
               />
-            ) : (
-              <View style={styles.editingButtons}>
+              <CustomInput
+                label="Cédula"
+                value={form.cedula}
+                onChangeText={(t) => handleInputChange("cedula", t)}
+                icon={IdIcon}
+                editable={isEditing}
+                keyboardType="numeric"
+              />
+              <CustomInput
+                label="Correo Electrónico"
+                value={form.email}
+                onChangeText={(t) => handleInputChange("email", t)}
+                icon={MailIcon}
+                editable={isEditing}
+                keyboardType="email-address"
+              />
+              <CustomInput
+                label="Teléfono"
+                value={form.phone}
+                onChangeText={(t) => handleInputChange("phone", t)}
+                icon={PhoneIcon}
+                editable={isEditing}
+                keyboardType="phone-pad"
+              />
+              <CustomInput
+                label="Dirección"
+                value={form.address}
+                onChangeText={(t) => handleInputChange("address", t)}
+                icon={MapIcon}
+                editable={isEditing}
+              />
+            </View>
+
+            <View style={styles.buttonSection}>
+              {!isEditing ? (
                 <CustomButton
-                  title="Guardar Cambios"
-                  type="primary"
-                  onPress={handleSaveChanges}
+                  title="Editar Perfil"
+                  onPress={() => setIsEditing(true)}
                 />
-                <View style={{ height: 12 }} />
-                <CustomButton
-                  title="Cancelar"
-                  type="danger"
-                  onPress={handlePressCancel}
-                />
-              </View>
-            )}
+              ) : (
+                <View style={styles.editingButtons}>
+                  <CustomButton
+                    title="Guardar Cambios"
+                    type="primary"
+                    onPress={handleSaveChanges}
+                  />
+                  <View style={{ height: 12 }} />
+                  <CustomButton
+                    title="Cancelar"
+                    type="danger"
+                    onPress={handlePressCancel}
+                  />
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-      {/* MODALES */}
+      {/* Modales */}
       <LoadingModal visible={isLoading} message="Actualizando perfil..." />
-
       <SingleBtnModal
         visible={modalSuccess}
         icon={CheckIcon}
@@ -336,8 +337,6 @@ const EditProfileScreen = () => {
         subtitle="Los cambios se han guardado con éxito."
         onConfirm={() => setModalSuccess(false)}
       />
-
-      {/* Modal para errores de validación o duplicados */}
       <SingleBtnModal
         visible={errorModal.visible}
         icon={errorModal.icon}
@@ -345,12 +344,11 @@ const EditProfileScreen = () => {
         subtitle={errorModal.subtitle}
         onConfirm={() => setErrorModal({ ...errorModal, visible: false })}
       />
-
       <DoubleBtnModal
         visible={modalCancelVisible}
         icon={AlertIcon}
         title="¿Descartar cambios?"
-        subtitle="Si confirmas, los cambios que hayas realizado se perderán y volverás a los datos anteriores."
+        subtitle="Si confirmas, los cambios se perderán."
         onClose={() => setModalCancelVisible(false)}
         onConfirm={confirmCancel}
       />
@@ -375,6 +373,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+    zIndex: 10,
   },
   headerLeft: {
     flexDirection: "row",
@@ -395,8 +394,11 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: "#4A5565",
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 100, // Espacio extra para que el Footer no tape el final al hacer scroll
     paddingTop: 30,
     paddingHorizontal: 16,
   },

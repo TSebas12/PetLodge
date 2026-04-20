@@ -1,10 +1,11 @@
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router"; // Añadimos useLocalSearchParams
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react"; // Añadimos useEffect
+import { useEffect, useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -37,9 +38,9 @@ interface PetFormData {
   sexo: string;
   tamano: string;
   foto: string;
-  vacunado: boolean | null; // <-- Aquí permitimos ambos
+  vacunado: boolean | null;
   especificarVacunas: string;
-  condicionesMedicas: boolean | null; // <-- Aquí también
+  condicionesMedicas: boolean | null;
   especificarCondiciones: string;
   vetNombre: string;
   vetTelefono: string;
@@ -49,7 +50,7 @@ interface PetFormData {
 const RegisterPetScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const isEditing = !!id; // Booleano para saber si estamos editando
+  const isEditing = !!id;
 
   // Estados de UI
   const [loading, setLoading] = useState(false);
@@ -84,7 +85,6 @@ const RegisterPetScreen = () => {
     if (isEditing) {
       loadPetData();
     } else {
-      // Si entramos a registrar (no hay ID), reseteamos al estado inicial
       setFormData(initialFormState);
     }
   }, [id]);
@@ -150,7 +150,6 @@ const RegisterPetScreen = () => {
 
     setLoading(true);
     try {
-      console.log("Datos a enviar:", formData); // Debug: Ver qué datos se están enviando
       const API_URL = API_BASE_URL;
 
       let response;
@@ -167,17 +166,14 @@ const RegisterPetScreen = () => {
           ...formData,
           ownerId: user._id,
           foto: formData.foto,
-
           especificarVacunas: formData.vacunado
             ? formData.especificarVacunas
             : "Al día / No aplica",
-
           especificarCondiciones: formData.condicionesMedicas
             ? formData.especificarCondiciones
             : "Ninguna",
         };
         response = await axios.post(`${API_URL}/api/pets`, payload);
-        console.log("Respuesta del servidor:", response); // Debug: Ver qué responde el servidor
       }
 
       if (response.status === 200 || response.status === 201) {
@@ -218,343 +214,346 @@ const RegisterPetScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <View style={styles.titleContainer}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Image
-              source={IconoVolver}
-              style={styles.backIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.mainTitle}>
-              {isEditing ? "Editar Mascota" : "Registro de Mascota"}
-            </Text>
-            <Text style={styles.subtitle}>
-              {isEditing
-                ? "Actualiza los datos de tu mascota"
-                : "Completa los datos de tu mascota"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Información Básica</Text>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Nombre de la mascota</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.nombre}
-              placeholder="Nombre de la mascota"
-              placeholderTextColor="rgba(10, 10, 10, 0.50)"
-              onChangeText={(v) => handleInputChange("nombre", v)}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Tipo</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.tipo}
-              placeholder="Perro, Gato, etc."
-              placeholderTextColor="rgba(10, 10, 10, 0.50)"
-              onChangeText={(v) => handleInputChange("tipo", v)}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Raza</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.raza}
-              placeholder="Raza de la mascota"
-              placeholderTextColor="rgba(10, 10, 10, 0.50)"
-              onChangeText={(v) => handleInputChange("raza", v)}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Edad (años)</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.edad.toString()}
-              placeholder="Edad de la mascota"
-              keyboardType="numeric"
-              placeholderTextColor="rgba(10, 10, 10, 0.50)"
-              onChangeText={(v) => handleInputChange("edad", v)}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Tamaño</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.tamano}
-              placeholder="Pequeño, Mediano, Grande"
-              onChangeText={(v) => handleInputChange("tamano", v)}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Fotografía de la mascota</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.titleContainer}>
             <TouchableOpacity
-              style={styles.photoUploadContainer}
-              onPress={pickImage}
-              activeOpacity={0.7}
+              onPress={() => router.back()}
+              style={styles.backButton}
             >
-              {formData.foto && formData.foto !== "sample_url.jpg" ? (
-                <Image
-                  source={{ uri: formData.foto }}
-                  style={styles.previewImage}
-                />
-              ) : (
-                <View style={styles.uploadPlaceholder}>
-                  <Image
-                    source={IconUpload}
-                    style={styles.uploadIcon}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.uploadText}>
-                    Haz clic para subir la fotografía aquí
-                  </Text>
-                </View>
-              )}
+              <Image
+                source={IconoVolver}
+                style={styles.backIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.mainTitle}>
+                {isEditing ? "Editar Mascota" : "Registro de Mascota"}
+              </Text>
+              <Text style={styles.subtitle}>
+                {isEditing
+                  ? "Actualiza los datos de tu mascota"
+                  : "Completa los datos de tu mascota"}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Sexo</Text>
-            <View style={styles.selectorRow}>
-              <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.sexo === "Masculino" && styles.selectorBtnActive,
-                ]}
-                onPress={() => handleInputChange("sexo", "Masculino")}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    formData.sexo === "Masculino" && styles.selectorTextActive,
-                  ]}
-                >
-                  Macho
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.sexo === "Femenino" && styles.selectorBtnActive,
-                ]}
-                onPress={() => handleInputChange("sexo", "Femenino")}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    formData.sexo === "Femenino" && styles.selectorTextActive,
-                  ]}
-                >
-                  Hembra
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Información Básica</Text>
 
-          {/* SECCIÓN: SALUD */}
-          <Text style={styles.sectionTitle}>Estado de Salud</Text>
-
-          {/* SECCIÓN VACUNAS */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>¿Tiene sus vacunas al día?</Text>
-            <View style={styles.selectorRow}>
-              <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.vacunado === true && styles.selectorBtnActive,
-                ]}
-                onPress={() => {
-                  setFormData({
-                    ...formData,
-                    vacunado: true,
-                    especificarVacunas: "",
-                  });
-                }}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    formData.vacunado === true && styles.selectorTextActive,
-                  ]}
-                >
-                  Sí
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.vacunado === false && styles.selectorBtnActive,
-                ]}
-                onPress={() => {
-                  setFormData({
-                    ...formData,
-                    vacunado: false,
-                    especificarVacunas: "Al día / No aplica",
-                  });
-                }}
-              >
-                <Text
-                  style={[
-                    styles.selectorText,
-                    formData.vacunado === false && styles.selectorTextActive,
-                  ]}
-                >
-                  No
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* INPUT CONDICIONAL VACUNAS: Solo visible si es TRUE */}
-          {formData.vacunado === true && (
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Especificar vacunas</Text>
+              <Text style={styles.label}>Nombre de la mascota</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ej: Distemper, Parvovirus..."
-                value={formData.especificarVacunas}
-                onChangeText={(v) => handleInputChange("especificarVacunas", v)}
+                value={formData.nombre}
+                placeholder="Nombre de la mascota"
+                placeholderTextColor="rgba(10, 10, 10, 0.50)"
+                onChangeText={(v) => handleInputChange("nombre", v)}
               />
             </View>
-          )}
 
-          {/* SECCIÓN CONDICIONES MÉDICAS */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>¿Tiene condiciones médicas?</Text>
-            <View style={styles.selectorRow}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Tipo</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.tipo}
+                placeholder="Perro, Gato, etc."
+                placeholderTextColor="rgba(10, 10, 10, 0.50)"
+                onChangeText={(v) => handleInputChange("tipo", v)}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Raza</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.raza}
+                placeholder="Raza de la mascota"
+                placeholderTextColor="rgba(10, 10, 10, 0.50)"
+                onChangeText={(v) => handleInputChange("raza", v)}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Edad (años)</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.edad.toString()}
+                placeholder="Edad de la mascota"
+                keyboardType="numeric"
+                placeholderTextColor="rgba(10, 10, 10, 0.50)"
+                onChangeText={(v) => handleInputChange("edad", v)}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Tamaño</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.tamano}
+                placeholder="Pequeño, Mediano, Grande"
+                placeholderTextColor="rgba(10, 10, 10, 0.50)"
+                onChangeText={(v) => handleInputChange("tamano", v)}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Fotografía de la mascota</Text>
               <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.condicionesMedicas === true &&
-                    styles.selectorBtnActiveRed,
-                ]}
-                onPress={() => {
-                  setFormData({
-                    ...formData,
-                    condicionesMedicas: true,
-                    especificarCondiciones: "",
-                  });
-                }}
+                style={styles.photoUploadContainer}
+                onPress={pickImage}
+                activeOpacity={0.7}
               >
-                <Text
+                {formData.foto && formData.foto !== "sample_url.jpg" ? (
+                  <Image
+                    source={{ uri: formData.foto }}
+                    style={styles.previewImage}
+                  />
+                ) : (
+                  <View style={styles.uploadPlaceholder}>
+                    <Image
+                      source={IconUpload}
+                      style={styles.uploadIcon}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.uploadText}>
+                      Haz clic para subir la fotografía aquí
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Sexo</Text>
+              <View style={styles.selectorRow}>
+                <TouchableOpacity
                   style={[
-                    styles.selectorText,
+                    styles.selectorBtn,
+                    formData.sexo === "Masculino" && styles.selectorBtnActive,
+                  ]}
+                  onPress={() => handleInputChange("sexo", "Masculino")}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.sexo === "Masculino" &&
+                        styles.selectorTextActive,
+                    ]}
+                  >
+                    Macho
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorBtn,
+                    formData.sexo === "Femenino" && styles.selectorBtnActive,
+                  ]}
+                  onPress={() => handleInputChange("sexo", "Femenino")}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.sexo === "Femenino" && styles.selectorTextActive,
+                    ]}
+                  >
+                    Hembra
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Estado de Salud</Text>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>¿Tiene sus vacunas al día?</Text>
+              <View style={styles.selectorRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorBtn,
+                    formData.vacunado === true && styles.selectorBtnActive,
+                  ]}
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      vacunado: true,
+                      especificarVacunas: "",
+                    });
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.vacunado === true && styles.selectorTextActive,
+                    ]}
+                  >
+                    Sí
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorBtn,
+                    formData.vacunado === false && styles.selectorBtnActive,
+                  ]}
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      vacunado: false,
+                      especificarVacunas: "Al día / No aplica",
+                    });
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.vacunado === false && styles.selectorTextActive,
+                    ]}
+                  >
+                    No
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {formData.vacunado === true && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Especificar vacunas</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej: Distemper, Parvovirus..."
+                  value={formData.especificarVacunas}
+                  onChangeText={(v) =>
+                    handleInputChange("especificarVacunas", v)
+                  }
+                />
+              </View>
+            )}
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>¿Tiene condiciones médicas?</Text>
+              <View style={styles.selectorRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorBtn,
                     formData.condicionesMedicas === true &&
-                      styles.selectorTextActive,
+                      styles.selectorBtnActiveRed,
                   ]}
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      condicionesMedicas: true,
+                      especificarCondiciones: "",
+                    });
+                  }}
                 >
-                  Sí
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.selectorBtn,
-                  formData.condicionesMedicas === false &&
-                    styles.selectorBtnActive,
-                ]}
-                onPress={() => {
-                  setFormData({
-                    ...formData,
-                    condicionesMedicas: false,
-                    especificarCondiciones: "Ninguna",
-                  });
-                }}
-              >
-                <Text
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.condicionesMedicas === true &&
+                        styles.selectorTextActive,
+                    ]}
+                  >
+                    Sí
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[
-                    styles.selectorText,
+                    styles.selectorBtn,
                     formData.condicionesMedicas === false &&
-                      styles.selectorTextActive,
+                      styles.selectorBtnActive,
                   ]}
+                  onPress={() => {
+                    setFormData({
+                      ...formData,
+                      condicionesMedicas: false,
+                      especificarCondiciones: "Ninguna",
+                    });
+                  }}
                 >
-                  No
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      formData.condicionesMedicas === false &&
+                        styles.selectorTextActive,
+                    ]}
+                  >
+                    No
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {/* INPUT CONDICIONAL CONDICIONES: Solo visible si es TRUE */}
-          {formData.condicionesMedicas === true && (
+            {formData.condicionesMedicas === true && (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Especificar condiciones</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ej: Alergias, asma..."
+                  value={formData.especificarCondiciones}
+                  onChangeText={(v) =>
+                    handleInputChange("especificarCondiciones", v)
+                  }
+                />
+              </View>
+            )}
+
+            <Text style={styles.sectionTitle}>Veterinario de Confianza</Text>
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Especificar condiciones</Text>
+              <Text style={styles.label}>Nombre</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ej: Alergias, asma..."
-                value={formData.especificarCondiciones}
-                onChangeText={(v) =>
-                  handleInputChange("especificarCondiciones", v)
-                }
+                value={formData.vetNombre}
+                placeholder="Dr. / Clínica"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={(v) => handleInputChange("vetNombre", v)}
               />
             </View>
-          )}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Teléfono</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.vetTelefono}
+                placeholder="8888-8888"
+                keyboardType="phone-pad"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={(v) => handleInputChange("vetTelefono", v)}
+              />
+            </View>
 
-          {/* SECCIÓN: VETERINARIO */}
-          <Text style={styles.sectionTitle}>Veterinario de Confianza</Text>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Nombre</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.vetNombre}
-              placeholder="Dr. / Clínica"
-              placeholderTextColor="#9CA3AF"
-              onChangeText={(v) => handleInputChange("vetNombre", v)}
-            />
-          </View>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Teléfono</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.vetTelefono}
-              placeholder="8888-8888"
-              keyboardType="phone-pad"
-              placeholderTextColor="#9CA3AF"
-              onChangeText={(v) => handleInputChange("vetTelefono", v)}
-            />
-          </View>
+            <Text style={styles.sectionTitle}>Cuidados Especiales</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Alimentación y notas</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={formData.cuidados}
+                multiline
+                placeholder="Ej: Solo come alimento seco, 2 veces al día..."
+                placeholderTextColor="#9CA3AF"
+                onChangeText={(v) => handleInputChange("cuidados", v)}
+              />
+            </View>
 
-          {/* SECCIÓN: CUIDADOS */}
-          <Text style={styles.sectionTitle}>Cuidados Especiales</Text>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Alimentación y notas</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.cuidados}
-              multiline
-              placeholder="Ej: Solo come alimento seco, 2 veces al día..."
-              placeholderTextColor="#9CA3AF"
-              onChangeText={(v) => handleInputChange("cuidados", v)}
-            />
+            <View style={styles.buttonSection}>
+              <CustomButton
+                title={isEditing ? "Guardar Cambios" : "Registrar Mascota"}
+                type="primary"
+                onPress={handleSave}
+              />
+              <CustomButton
+                title="Cancelar"
+                type="danger"
+                onPress={() => router.back()}
+              />
+            </View>
           </View>
-
-          <View style={styles.buttonSection}>
-            <CustomButton
-              title={isEditing ? "Guardar Cambios" : "Registrar Mascota"}
-              type="primary"
-              onPress={handleSave}
-            />
-            <CustomButton
-              title="Cancelar"
-              type="danger"
-              onPress={() => router.back()}
-            />
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <LoadingModal visible={loading} />
       <SingleBtnModal
@@ -572,7 +571,7 @@ const RegisterPetScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F9FAFB", // El background del contenedor principal en Figma
+    backgroundColor: "#F9FAFB",
   },
   header: {
     width: "100%",
@@ -588,28 +587,29 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: "row", alignItems: "center" },
   headerLogo: { width: 32, height: 32 },
   headerTitle: {
-    color: "#101828", // Valor Figma: PetLodge
+    color: "#101828",
     fontSize: 20,
     fontWeight: "700",
     lineHeight: 28,
-    fontFamily: "Inter", // Si tienes la fuente instalada
+    fontFamily: "Inter",
     marginLeft: 8,
   },
   logoutIcon: { width: 20, height: 20, tintColor: "#4A5565" },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 30,
+    paddingBottom: 24,
   },
   titleContainer: { marginBottom: 24 },
   mainTitle: {
-    color: "#101828", // Registro de Mascota
+    color: "#101828",
     fontSize: 30,
     fontWeight: "700",
     lineHeight: 36,
     fontFamily: "Inter",
   },
   subtitle: {
-    color: "#4A5565", // Completa los datos...
+    color: "#4A5565",
     fontSize: 16,
     fontWeight: "400",
     lineHeight: 24,
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   sectionTitle: {
-    color: "#101828", // Información Básica / Salud / Vet / Cuidados
+    color: "#101828",
     fontSize: 18,
     fontWeight: "600",
     lineHeight: 28,
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   },
   fieldGroup: { marginBottom: 16 },
   label: {
-    color: "#364153", // Labels de los campos
+    color: "#364153",
     fontSize: 14,
     fontWeight: "500",
     lineHeight: 20,
@@ -652,14 +652,14 @@ const styles = StyleSheet.create({
     borderColor: "#D0D5DD",
     borderRadius: 8,
     padding: 12,
-    fontSize: 16, // Valor Figma para el texto placeholder/input
+    fontSize: 16,
     color: "#0A0A0A",
     fontFamily: "Inter",
   },
   textArea: {
     height: 100,
     textAlignVertical: "top",
-    lineHeight: 24, // Basado en cuidados especiales de Figma
+    lineHeight: 24,
   },
   selectorRow: { flexDirection: "row", gap: 10, marginTop: 4 },
   selectorBtn: {
@@ -672,15 +672,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   selectorBtnActive: {
-    backgroundColor: "#00A63E", // Azul primario para selecciones "Sí"
+    backgroundColor: "#00A63E",
     borderColor: "#008236",
   },
   selectorBtnActiveRed: {
-    backgroundColor: "#00A63E", // Rojo para selecciones de alerta
+    backgroundColor: "#00A63E",
     borderColor: "#008236",
   },
   selectorText: {
-    color: "#0A0A0A", // Color Sí/No sin seleccionar
+    color: "#0A0A0A",
     fontSize: 16,
     fontWeight: "500",
     lineHeight: 24,
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.28,
     borderColor: "#D1D5DC",
-    borderStyle: "dashed", // Estilo Drag & Drop
+    borderStyle: "dashed",
     backgroundColor: "#F9FAFB",
     overflow: "hidden",
     justifyContent: "center",
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   uploadText: {
-    color: "#4A5565", // Color Figma
+    color: "#4A5565",
     fontSize: 14,
     fontFamily: "Inter",
     fontWeight: "400",
@@ -728,16 +728,16 @@ const styles = StyleSheet.create({
   uploadIcon: {
     width: 48,
     height: 48,
-    marginBottom: 12, // Espaciado con el texto inferior
+    marginBottom: 12,
   },
   backButton: {
-    marginRight: 12, // Espacio entre la flecha y el logo
-    padding: 4, // Área de toque más amplia
+    marginRight: 12,
+    padding: 4,
   },
   backIcon: {
     width: 24,
     height: 24,
-    tintColor: "#101828", // Color oscuro para que combine con el título
+    tintColor: "#101828",
   },
 });
 

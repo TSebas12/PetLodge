@@ -49,7 +49,7 @@ const DoubleBtnModal = ({
               {/* Usando tu CustomButton */}
               <View style={styles.flexBtn}>
                 <CustomButton
-                  title="Cancelar"
+                  title="Cancelar, volver"
                   onPress={onClose}
                   type="secondary"
                 />

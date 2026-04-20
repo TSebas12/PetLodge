@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PetLodge",
-    "slug": "petlodge-app",
+    "slug": "Test01AP",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/LogoPetLodgePng.png",
@@ -41,7 +41,8 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -53,6 +54,7 @@
       "eas": {
         "projectId": "3fcaccf9-adf7-46bc-812f-fc28c791f87d"
       }
-    }
+    },
+    "owner": "saguero"
   }
 }

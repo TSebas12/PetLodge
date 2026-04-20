@@ -5,7 +5,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Modal,
   Platform,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButtonIcon from "../components/CustomButtonIcon";
 import Footer from "../components/Footer";
+import DoubleBtnModal from "../components/modals/DoubleBtnModal";
 import API_BASE_URL from "../config/api";
 
 const Logo = require("../../assets/LogoPetLodge.webp");
@@ -24,6 +24,7 @@ const LogoutIcon = require("../../assets/IconoSalida.webp");
 const PlusIcon = require("../../assets/IconoPlus.webp");
 const EyeIcon = require("../../assets/IconoCheck.webp");
 const XIcon = require("../../assets/IconoX.webp");
+const IconoAlerta = require("../../assets/IconoAlerta.webp");
 
 const API_URL = API_BASE_URL;
 
@@ -296,9 +297,7 @@ const MyReservationsScreen = () => {
     setCancelModal({
       visible: true,
       reservationId: reservation._id,
-      reservationLabel: `Reserva #${reservation._id
-        .slice(-5)
-        .toUpperCase()} de ${reservation.petName}`,
+      reservationLabel: `la reserva de ${reservation.petName}`,
     });
   };
 
@@ -476,52 +475,14 @@ const MyReservationsScreen = () => {
         )}
       </ScrollView>
 
-      <Modal
+      <DoubleBtnModal
         visible={cancelModal.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeCancelModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirmar cancelación</Text>
-            <Text style={styles.modalText}>
-              ¿Seguro que deseas cancelar{" "}
-              <Text style={styles.modalTextBold}>
-                {cancelModal.reservationLabel}
-              </Text>
-              ?
-            </Text>
-            <Text style={styles.modalHint}>
-              Esta acción cambiará el estado de la reserva a cancelada.
-            </Text>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={closeCancelModal}
-                style={[styles.modalBtn, styles.modalBtnSecondary]}
-                disabled={cancelLoading}
-              >
-                <Text style={styles.modalBtnSecondaryText}>Volver</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={confirmCancelReservation}
-                style={[styles.modalBtn, styles.modalBtnDanger]}
-                disabled={cancelLoading}
-              >
-                {cancelLoading ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.modalBtnDangerText}>Sí, cancelar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        icon={IconoAlerta}
+        title="Confirmar cancelación"
+        subtitle={`¿Seguro que deseas cancelar ${cancelModal.reservationLabel}? Esta acción no se puede deshacer.`}
+        onClose={closeCancelModal}
+        onConfirm={confirmCancelReservation}
+      />
 
       <Footer />
     </SafeAreaView>
@@ -604,73 +565,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 22,
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(16, 24, 40, 0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 380,
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  modalTitle: {
-    color: "#101828",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  modalText: {
-    color: "#4A5565",
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  modalTextBold: {
-    color: "#101828",
-    fontWeight: "700",
-  },
-  modalHint: {
-    color: "#6A7282",
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 8,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 20,
-  },
-  modalBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  modalBtnSecondary: {
-    backgroundColor: "#F3F4F6",
-  },
-  modalBtnDanger: {
-    backgroundColor: "#DC2626",
-  },
-  modalBtnSecondaryText: {
-    color: "#374151",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  modalBtnDangerText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "700",
   },
 });
 

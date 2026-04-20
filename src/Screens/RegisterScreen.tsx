@@ -2,12 +2,14 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,6 +18,7 @@ import CustomInput from "../components/CustomInput";
 import LoadingModal from "../components/modals/LoadingModal";
 import SingleBtnModal from "../components/modals/SingleBtnModal";
 import API_BASE_URL from "../config/api";
+
 const Logo = require("../../assets/LogoPetLodge.webp");
 const UserIcon = require("../../assets/IconoUsuario.webp");
 const IdIcon = require("../../assets/IconoTarjeta.webp");
@@ -28,16 +31,14 @@ const LockIcon = require("../../assets/IconoContrasena.webp");
 const IconoAlerta = require("../../assets/IconoAlerta.webp");
 const IconoX = require("../../assets/IconoX.webp");
 const IconoCheck = require("../../assets/IconoCheck.webp");
-const LogoPetLodge = require("../../assets/LogoPetLodge.webp");
 
 const RegisterScreen = () => {
   const router = useRouter();
 
-  const phoneRegex = /^[0-9]{8}$/; // Exactamente 8 dígitos numéricos
-  const cedulaRegex = /^[0-9]{9}$/; // Exactamente 9 dígitos numéricos
-  const emailRegex = /\S+@\S+\.\S+/; // Estructura básica de correo
+  const phoneRegex = /^[0-9]{8}$/;
+  const cedulaRegex = /^[0-9]{9}$/;
+  const emailRegex = /\S+@\S+\.\S+/;
 
-  // 1. Estados para los campos
   const [fullName, setFullName] = useState("");
   const [cedula, setCedula] = useState("");
   const [email, setEmail] = useState("");
@@ -45,7 +46,6 @@ const RegisterScreen = () => {
   const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
 
-  // Estados para Modales
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({
@@ -55,9 +55,7 @@ const RegisterScreen = () => {
     onConfirm: () => {},
   });
 
-  // 2. Función para enviar al Backend
   const handleRegister = async () => {
-    // 1. Validación de campos vacíos
     if (!fullName || !cedula || !email || !phone || !password) {
       setModalData({
         title: "Campos incompletos",
@@ -69,7 +67,6 @@ const RegisterScreen = () => {
       return;
     }
 
-    // 2. Validación de Cédula
     if (!cedulaRegex.test(cedula)) {
       setModalData({
         title: "Cédula inválida",
@@ -81,7 +78,6 @@ const RegisterScreen = () => {
       return;
     }
 
-    // 3. Validación de Teléfono
     if (!phoneRegex.test(phone)) {
       setModalData({
         title: "Teléfono inválido",
@@ -93,7 +89,6 @@ const RegisterScreen = () => {
       return;
     }
 
-    // 4. Validación de Correo
     if (!emailRegex.test(email)) {
       setModalData({
         title: "Correo inválido",
@@ -124,7 +119,6 @@ const RegisterScreen = () => {
       ]);
 
       if (response.status === 201) {
-        // ÉXITO AL REGISTRAR
         setModalData({
           title: "¡Registro Exitoso!",
           subtitle:
@@ -139,7 +133,6 @@ const RegisterScreen = () => {
       }
     } catch (error: any) {
       console.error(error);
-      // ERROR AL REGISTRAR (Email ya existe, error de red, etc)
       setModalData({
         title: "Error al registrar",
         subtitle:
@@ -166,87 +159,97 @@ const RegisterScreen = () => {
         onConfirm={modalData.onConfirm}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      {/* KeyboardAvoidingView envuelve el contenido para desplazarlo hacia arriba.
+        - behavior "padding" es ideal para iOS.
+        - behavior "height" o dejarlo vacío suele funcionar mejor en Android.
+      */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <View style={styles.card}>
-          <View style={styles.iconContainer}>
-            <Image source={Logo} style={styles.logo} resizeMode="contain" />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" // Permite cerrar el teclado al tocar fuera de los inputs
+        >
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <Image source={Logo} style={styles.logo} resizeMode="contain" />
+            </View>
+
+            <Text style={styles.title}>Registro de Usuario</Text>
+            <Text style={styles.subtitle}>
+              Completa tus datos para crear una cuenta
+            </Text>
+
+            <CustomInput
+              label="Nombre Completo"
+              placeholder="Ingrese su nombre completo"
+              icon={UserIcon}
+              value={fullName}
+              onChangeText={setFullName}
+            />
+
+            <CustomInput
+              label="Cédula"
+              placeholder="Ingrese su número de cédula"
+              icon={IdIcon}
+              value={cedula}
+              onChangeText={setCedula}
+              keyboardType="numeric"
+            />
+
+            <CustomInput
+              label="Correo Electrónico"
+              placeholder="Ingrese su correo electrónico"
+              icon={MailIcon}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
+
+            <CustomInput
+              label="Teléfono"
+              placeholder="Ingrese su número de teléfono"
+              icon={PhoneIcon}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+
+            <CustomInput
+              label="Dirección"
+              placeholder="Ingrese su dirección"
+              icon={MapIcon}
+              value={address}
+              onChangeText={setAddress}
+            />
+
+            <CustomInput
+              label="Contraseña"
+              placeholder="Ingrese su contraseña"
+              isPassword
+              icon={LockIcon}
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <View style={styles.buttonWrapper}>
+              <CustomButton title="Registrarse" onPress={handleRegister} />
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
+              <TouchableOpacity onPress={() => router.back()}>
+                <Text style={styles.linkText}>Iniciar Sesión</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <Text style={styles.title}>Registro de Usuario</Text>
-          <Text style={styles.subtitle}>
-            Completa tus datos para crear una cuenta
-          </Text>
-
-          <CustomInput
-            label="Nombre Completo"
-            placeholder="Ingrese su nombre completo"
-            icon={UserIcon}
-            value={fullName}
-            onChangeText={setFullName}
-          />
-
-          <CustomInput
-            label="Cédula"
-            placeholder="Ingrese su número de cédula"
-            icon={IdIcon}
-            value={cedula}
-            onChangeText={setCedula}
-          />
-
-          <CustomInput
-            label="Correo Electrónico"
-            placeholder="Ingrese su correo electrónico"
-            icon={MailIcon}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-
-          <CustomInput
-            label="Teléfono"
-            placeholder="Ingrese su número de teléfono"
-            icon={PhoneIcon}
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-
-          <CustomInput
-            label="Dirección"
-            placeholder="Ingrese su dirección"
-            icon={MapIcon}
-            value={address}
-            onChangeText={setAddress}
-          />
-
-          <CustomInput
-            label="Contraseña"
-            placeholder="Ingrese su contraseña"
-            isPassword
-            icon={LockIcon}
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <View style={styles.buttonWrapper}>
-            <CustomButton title="Registrarse" onPress={handleRegister} />
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.linkText}>Iniciar Sesión</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
